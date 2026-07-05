@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: cms-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    healthCheckPath: /api/dashboard/stats
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: AllowedOrigins
+        sync: false
