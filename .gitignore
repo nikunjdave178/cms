@@ -1,0 +1,38 @@
+# .NET / ASP.NET Core
+backend/**/bin/
+backend/**/obj/
+backend/**/*.user
+backend/**/*.suo
+*.DotSettings.user
+
+# EF Core migrations lock
+*.db
+*.db-shm
+*.db-wal
+
+# Local secrets (never commit real credentials)
+backend/**/appsettings.Development.json
+backend/**/appsettings.Local.json
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Claude Code local session files
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*

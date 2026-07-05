@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: Debug",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-backend",
+      "program": "${workspaceFolder}/backend/CmsApi/bin/Debug/net10.0/CmsApi.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/backend/CmsApi",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5000"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    },
+    {
+      "name": "Frontend: Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMapPathOverrides": {
+        "/@fs/*": "${workspaceFolder}/frontend/src/*"
+      },
+      "preLaunchTask": "start-frontend"
+    },
+    {
+      "name": "Frontend: Edge",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMapPathOverrides": {
+        "/@fs/*": "${workspaceFolder}/frontend/src/*"
+      },
+      "preLaunchTask": "start-frontend"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack (Chrome)",
+      "configurations": ["Backend: Debug", "Frontend: Chrome"],
+      "stopAll": true,
+      "presentation": { "order": 1 }
+    },
+    {
+      "name": "Full Stack (Edge)",
+      "configurations": ["Backend: Debug", "Frontend: Edge"],
+      "stopAll": true,
+      "presentation": { "order": 2 }
+    }
+  ]
+}
