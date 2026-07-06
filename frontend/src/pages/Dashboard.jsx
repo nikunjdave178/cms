@@ -33,10 +33,11 @@ function StatCard({ label, value, sub, color, to }) {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null)
+  const [stats, setStats] = useState({ totalPatients: 0, totalDoctors: 0, todayAppointments: 0, pendingInvoices: 0, monthRevenue: 0, recentAppointments: [] })
   const [revenue, setRevenue] = useState([])
   const [apptStatus, setApptStatus] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -47,12 +48,19 @@ export default function Dashboard() {
       setStats(s)
       setRevenue(r)
       setApptStatus(a)
-    }).finally(() => setLoading(false))
+    }).catch(e => setError(e.message))
+    .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <Spinner />
 
   return (
+    <>
+    {error && (
+      <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        Could not load dashboard data — {error}
+      </div>
+    )}
     <div className="space-y-6">
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -144,5 +152,6 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    </>
   )
 }
