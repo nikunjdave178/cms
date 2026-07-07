@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Vitals> Vitals => Set<Vitals>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,6 +72,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithOne(item => item.Invoice)
             .HasForeignKey(item => item.InvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // User → unique email
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
 
         // Decimal precision
         modelBuilder.Entity<Invoice>().Property(i => i.SubtotalAmount).HasPrecision(18, 2);

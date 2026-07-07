@@ -1,6 +1,7 @@
 using CmsApi.Data;
 using CmsApi.Dtos;
 using CmsApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class BillingController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -44,6 +46,7 @@ public class BillingController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.AdminReceptionist)]
     public async Task<ActionResult<InvoiceResponse>> Create(InvoiceRequest req)
     {
         if (req.Items == null || req.Items.Count == 0)
@@ -88,6 +91,7 @@ public class BillingController(AppDbContext db) : ControllerBase
     }
 
     [HttpPatch("{id}/status")]
+    [Authorize(Roles = Roles.AdminReceptionist)]
     public async Task<ActionResult<InvoiceResponse>> UpdateStatus(int id, InvoiceUpdateStatusRequest req)
     {
         var invoice = await db.Invoices
@@ -115,6 +119,7 @@ public class BillingController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = Roles.AdminReceptionist)]
     public async Task<IActionResult> Delete(int id)
     {
         var invoice = await db.Invoices.FindAsync(id);

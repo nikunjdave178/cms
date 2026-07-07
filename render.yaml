@@ -5,11 +5,13 @@ services:
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
     plan: free
-    healthCheckPath: /api/dashboard/stats
+    healthCheckPath: /health
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: ConnectionStrings__DefaultConnection
         sync: false
       - key: AllowedOrigins
+        sync: false
+      - key: Jwt__Key
         sync: false

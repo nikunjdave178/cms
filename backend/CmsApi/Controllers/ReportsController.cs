@@ -1,5 +1,6 @@
 using CmsApi.Data;
 using CmsApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = Roles.Admin)]
 public class ReportsController(AppDbContext db) : ControllerBase
 {
     [HttpGet("revenue")]

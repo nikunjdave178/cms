@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const links = [
   {
@@ -22,8 +23,12 @@ const links = [
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
   },
   {
-    to: '/reports', label: 'Reports',
+    to: '/reports', label: 'Reports', roles: ['Admin'],
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+  },
+  {
+    to: '/users', label: 'Users', roles: ['Admin'],
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   },
 ]
 
@@ -36,6 +41,9 @@ function Icon({ children }) {
 }
 
 export default function Sidebar() {
+  const { user, logout, hasRole } = useAuth()
+  const visibleLinks = links.filter(l => !l.roles || hasRole(...l.roles))
+
   return (
     <aside className="w-60 min-h-screen bg-slate-900 text-white flex flex-col">
       <div className="px-6 py-5 border-b border-slate-700/60">
@@ -49,7 +57,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {links.map(({ to, label, icon }) => (
+        {visibleLinks.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -69,9 +77,14 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-6 py-4 border-t border-slate-700/60">
-        <p className="text-xs text-slate-500">
-          {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </p>
+        <p className="text-sm font-medium text-slate-200 truncate">{user?.fullName}</p>
+        <p className="text-xs text-slate-500">{user?.role}</p>
+        <button
+          onClick={logout}
+          className="mt-3 text-xs font-medium text-slate-400 hover:text-white transition-colors"
+        >
+          Log out
+        </button>
       </div>
     </aside>
   )

@@ -1,6 +1,7 @@
 using CmsApi.Data;
 using CmsApi.Dtos;
 using CmsApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PatientsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]

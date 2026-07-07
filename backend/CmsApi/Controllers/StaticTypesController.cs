@@ -1,5 +1,6 @@
 using CmsApi.Data;
 using CmsApi.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/static-types")]
+[Authorize]
 public class StaticTypesController(AppDbContext db) : ControllerBase
 {
     [HttpGet]

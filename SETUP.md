@@ -27,12 +27,14 @@ Update the connection string in `backend/CmsApi/appsettings.json`:
 ```bash
 cd backend/CmsApi
 dotnet restore
-dotnet run
+dotnet watch run
 ```
 
-The API starts on **http://localhost:5000**.  
-Scalar API UI is available at **http://localhost:5000/scalar**.  
-EF Core migrations are applied automatically on first startup.
+The API starts on **http://localhost:5000**.
+Scalar API UI is available at **http://localhost:5000/scalar**.
+EF Core migrations are applied automatically on first startup, along with a seeded admin login (`admin@clinic.local` / `Admin@123` — change this after your first deploy).
+
+Use `dotnet watch run` instead of `dotnet run` during development — it rebuilds and restarts automatically on save, same as Vite's hot reload on the frontend.
 
 ## 3. Frontend
 
@@ -42,7 +44,11 @@ npm install
 npm run dev
 ```
 
-The app opens at **http://localhost:5173**.
+The app opens at **http://localhost:5173**. All routes except `/login` require signing in.
+
+## 4. Verifying changes before pushing
+
+Run `./scripts/verify-local.ps1` (PowerShell) before pushing to `master` — it checks Postgres is reachable and builds both projects. There's no automated test suite yet, so click through the feature you changed in the browser afterward. `master` auto-deploys to Render (backend) and Vercel (frontend) on push, so this is the last check before it goes live.
 
 ## Project Structure
 
@@ -84,3 +90,7 @@ cms/
 | POST | /api/billing | Create invoice |
 | PATCH | /api/billing/{id}/status | Mark paid/cancelled |
 | GET | /api/dashboard/stats | Dashboard summary |
+| POST | /api/auth/login | Log in, returns JWT |
+| GET | /api/auth/me | Current logged-in user |
+| GET | /api/users | List staff accounts (Admin only) |
+| GET | /health | Unauthenticated health check (used by Render) |

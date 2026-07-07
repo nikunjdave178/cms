@@ -7,6 +7,8 @@ const titles = {
   '/appointments': 'Appointments',
   '/billing': 'Billing',
   '/doctors': 'Doctors',
+  '/reports': 'Reports',
+  '/users': 'Users',
 }
 
 export default function Layout() {

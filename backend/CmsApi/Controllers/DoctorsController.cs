@@ -1,6 +1,7 @@
 using CmsApi.Data;
 using CmsApi.Dtos;
 using CmsApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class DoctorsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -25,6 +27,7 @@ public class DoctorsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<DoctorResponse>> Create(DoctorRequest req)
     {
         var doctor = new Doctor
@@ -44,6 +47,7 @@ public class DoctorsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<DoctorResponse>> Update(int id, DoctorRequest req)
     {
         var doctor = await db.Doctors.FindAsync(id);
@@ -62,6 +66,7 @@ public class DoctorsController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Delete(int id)
     {
         var doctor = await db.Doctors.FindAsync(id);

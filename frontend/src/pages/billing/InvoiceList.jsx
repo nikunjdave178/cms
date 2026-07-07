@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getInvoices, updateInvoiceStatus, deleteInvoice } from '../../api/billing'
 import { useStaticValues } from '../../hooks/useStaticValues'
+import { useAuth } from '../../context/AuthContext'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -16,6 +17,8 @@ const inr = (val) =>
   '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 export default function InvoiceList() {
+  const { hasRole } = useAuth()
+  const canEdit = hasRole('Admin', 'Receptionist')
   const { values: invoiceStatuses } = useStaticValues('INVOICE_STATUS')
   const { values: paymentModes } = useStaticValues('PAYMENT_MODE')
 
@@ -85,7 +88,7 @@ export default function InvoiceList() {
           {invoiceStatuses.map(s => <option key={s.id} value={s.id}>{s.displayValue}</option>)}
         </select>
         <div className="flex-1" />
-        <Link to="/billing/new" className="btn-primary">+ New Invoice</Link>
+        {canEdit && <Link to="/billing/new" className="btn-primary">+ New Invoice</Link>}
       </div>
 
       {loading ? <Spinner /> : (
@@ -116,10 +119,12 @@ export default function InvoiceList() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{format(new Date(i.issuedAt), 'd MMM yyyy')}</td>
                   <td className="px-4 py-3 text-right space-x-2">
-                    {i.statusDisplay === 'Pending' && (
-                      <button className="btn-primary text-xs" onClick={() => setMarkPaidTarget(i)}>Mark Paid</button>
-                    )}
-                    <button className="btn-danger text-xs" onClick={() => setDeleteTarget(i)}>Delete</button>
+                    {canEdit && <>
+                      {i.statusDisplay === 'Pending' && (
+                        <button className="btn-primary text-xs" onClick={() => setMarkPaidTarget(i)}>Mark Paid</button>
+                      )}
+                      <button className="btn-danger text-xs" onClick={() => setDeleteTarget(i)}>Delete</button>
+                    </>}
                   </td>
                 </tr>
               ))}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getDoctors, deleteDoctor } from '../../api/doctors'
+import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
 
@@ -8,6 +9,8 @@ const fullName = (d) =>
   [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ')
 
 export default function DoctorList() {
+  const { hasRole } = useAuth()
+  const canEdit = hasRole('Admin')
   const [doctors, setDoctors] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -27,9 +30,11 @@ export default function DoctorList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Link to="/doctors/new" className="btn-primary">+ Add Doctor</Link>
-      </div>
+      {canEdit && (
+        <div className="flex justify-end">
+          <Link to="/doctors/new" className="btn-primary">+ Add Doctor</Link>
+        </div>
+      )}
 
       {loading ? <Spinner /> : (
         <div className="card p-0 overflow-hidden">
@@ -51,8 +56,10 @@ export default function DoctorList() {
                   <td className="px-4 py-3 text-gray-600">{d.countryCode} {d.phoneNumber}</td>
                   <td className="px-4 py-3 text-gray-500">{d.email ?? '—'}</td>
                   <td className="px-4 py-3 text-right">
-                    <Link to={`/doctors/${d.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
-                    <button className="btn-danger text-xs" onClick={() => setDeleteTarget(d)}>Delete</button>
+                    {canEdit && <>
+                      <Link to={`/doctors/${d.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
+                      <button className="btn-danger text-xs" onClick={() => setDeleteTarget(d)}>Delete</button>
+                    </>}
                   </td>
                 </tr>
               ))}

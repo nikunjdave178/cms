@@ -1,6 +1,7 @@
 using CmsApi.Data;
 using CmsApi.Dtos;
 using CmsApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/appointments/{appointmentId}/vitals")]
+[Authorize]
 public class VitalsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -18,6 +20,7 @@ public class VitalsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.AdminDoctor)]
     public async Task<ActionResult<VitalsResponse>> Create(int appointmentId, VitalsRequest req)
     {
         if (!await db.Appointments.AnyAsync(a => a.Id == appointmentId))
@@ -45,6 +48,7 @@ public class VitalsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut]
+    [Authorize(Roles = Roles.AdminDoctor)]
     public async Task<ActionResult<VitalsResponse>> Update(int appointmentId, VitalsRequest req)
     {
         var vitals = await db.Vitals.FirstOrDefaultAsync(v => v.AppointmentId == appointmentId);
