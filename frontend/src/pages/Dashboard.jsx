@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getDashboardStats } from '../api/dashboard'
 import { getRevenue, getAppointmentsByStatus } from '../api/reports'
+import { useAuth } from '../context/AuthContext'
 import { format } from 'date-fns'
 import Spinner from '../components/Spinner'
 import {
@@ -33,6 +34,9 @@ function StatCard({ label, value, sub, color, to }) {
 }
 
 export default function Dashboard() {
+  const { hasRole } = useAuth()
+  const isAdmin = hasRole('Admin')
+
   const [stats, setStats] = useState({ totalPatients: 0, totalDoctors: 0, todayAppointments: 0, pendingInvoices: 0, monthRevenue: 0, recentAppointments: [] })
   const [revenue, setRevenue] = useState([])
   const [apptStatus, setApptStatus] = useState([])
@@ -40,17 +44,19 @@ export default function Dashboard() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    Promise.all([
-      getDashboardStats(),
-      getRevenue(6),
-      getAppointmentsByStatus(),
-    ]).then(([s, r, a]) => {
+    const calls = isAdmin
+      ? Promise.all([getDashboardStats(), getRevenue(6), getAppointmentsByStatus()])
+      : Promise.all([getDashboardStats()])
+
+    calls.then(([s, r, a]) => {
       setStats(s)
-      setRevenue(r)
-      setApptStatus(a)
+      if (isAdmin) {
+        setRevenue(r)
+        setApptStatus(a)
+      }
     }).catch(e => setError(e.message))
     .finally(() => setLoading(false))
-  }, [])
+  }, [isAdmin])
 
   if (loading) return <Spinner />
 
@@ -76,43 +82,45 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Revenue trend */}
-        <div className="card lg:col-span-2">
-          <h3 className="font-semibold text-gray-800 mb-4 text-sm">Revenue — Last 6 Months</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={revenue} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="monthName" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Revenue']} />
-              <Line type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3, fill: '#6366f1' }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Appointments by status */}
-        <div className="card">
-          <h3 className="font-semibold text-gray-800 mb-4 text-sm">Appointments by Status</h3>
-          {apptStatus.length === 0 ? (
-            <p className="text-sm text-gray-400 mt-8 text-center">No appointments yet</p>
-          ) : (
+      {/* Charts row (Admin only — backed by report endpoints scoped to Admin) */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Revenue trend */}
+          <div className="card lg:col-span-2">
+            <h3 className="font-semibold text-gray-800 mb-4 text-sm">Revenue — Last 6 Months</h3>
             <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={apptStatus} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
-                  dataKey="count" nameKey="status" paddingAngle={3}>
-                  {apptStatus.map((entry) => (
-                    <Cell key={entry.status} fill={PIE_COLORS[entry.status] ?? '#94a3b8'} />
-                  ))}
-                </Pie>
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                <Tooltip formatter={(v, n) => [v, n]} />
-              </PieChart>
+              <LineChart data={revenue} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="monthName" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Revenue']} />
+                <Line type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3, fill: '#6366f1' }} />
+              </LineChart>
             </ResponsiveContainer>
-          )}
+          </div>
+
+          {/* Appointments by status */}
+          <div className="card">
+            <h3 className="font-semibold text-gray-800 mb-4 text-sm">Appointments by Status</h3>
+            {apptStatus.length === 0 ? (
+              <p className="text-sm text-gray-400 mt-8 text-center">No appointments yet</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={apptStatus} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                    dataKey="count" nameKey="status" paddingAngle={3}>
+                    {apptStatus.map((entry) => (
+                      <Cell key={entry.status} fill={PIE_COLORS[entry.status] ?? '#94a3b8'} />
+                    ))}
+                  </Pie>
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v, n) => [v, n]} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Recent appointments */}
       <div className="card">
