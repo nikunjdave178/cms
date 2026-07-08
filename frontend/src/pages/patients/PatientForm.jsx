@@ -4,6 +4,7 @@ import { getPatient, createPatient, updatePatient } from '../../api/patients'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import Spinner from '../../components/Spinner'
 import DatePicker from '../../components/DatePicker'
+import Select from '../../components/Select'
 import CountryCodeSelect from '../../components/CountryCodeSelect'
 import { PHONE_LENGTHS, COUNTRIES_INDIA_FIRST } from '../../data/countries'
 import { IN_STATES, IN_CITIES, CITY_PINCODES, lookupPincode, lookupCity } from '../../data/pincodes'
@@ -237,16 +238,18 @@ export default function PatientForm() {
               value={form.dateOfBirth}
               onChange={set('dateOfBirth')}
               minYear={1900}
-              className={errors.dateOfBirth ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : ''}
+              error={errors.dateOfBirth}
             />
-            <FieldError msg={errors.dateOfBirth} />
           </div>
           <div>
             <label className="label">Gender *</label>
-            <select className={inputCls('genderId')} value={form.genderId} onChange={set('genderId')}>
-              <option value="">Select…</option>
-              {genders.map(g => <option key={g.id} value={g.id}>{g.displayValue}</option>)}
-            </select>
+            <Select
+              value={form.genderId}
+              onChange={set('genderId')}
+              options={genders.map(g => ({ value: String(g.id), label: g.displayValue }))}
+              placeholder="Select…"
+              error={Boolean(errors.genderId)}
+            />
             <FieldError msg={errors.genderId} />
           </div>
         </div>
@@ -285,10 +288,14 @@ export default function PatientForm() {
           </div>
           <div>
             <label className="label">Blood Group</label>
-            <select className="input" value={form.bloodGroupId} onChange={set('bloodGroupId')}>
-              <option value="">Unknown</option>
-              {bloodGroups.map(b => <option key={b.id} value={b.id}>{b.displayValue}</option>)}
-            </select>
+            <Select
+              value={form.bloodGroupId}
+              onChange={set('bloodGroupId')}
+              options={[
+                { value: '', label: 'Unknown' },
+                ...bloodGroups.map(b => ({ value: String(b.id), label: b.displayValue })),
+              ]}
+            />
           </div>
         </div>
 
@@ -303,9 +310,13 @@ export default function PatientForm() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="label">Country</label>
-            <select className={inputCls('country')} value={form.country} onChange={set('country')}>
-              {COUNTRIES_INDIA_FIRST.map(c => <option key={c.iso2} value={c.name}>{c.name}</option>)}
-            </select>
+            <Select
+              value={form.country}
+              onChange={set('country')}
+              searchable
+              options={COUNTRIES_INDIA_FIRST.map(c => ({ value: c.name, label: c.name, key: c.iso2 }))}
+              error={Boolean(errors.country)}
+            />
             <FieldError msg={errors.country} />
           </div>
           <div>

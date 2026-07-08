@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getUser, createUser, updateUser } from '../../api/users'
 import Spinner from '../../components/Spinner'
+import Select from '../../components/Select'
 
 const ROLES = ['Admin', 'Doctor', 'Receptionist']
 
@@ -26,7 +27,7 @@ export default function UserForm() {
   }, [id, isEdit])
 
   const set = (field) => (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    const value = e?.target ? (e.target.type === 'checkbox' ? e.target.checked : e.target.value) : e
     setForm(f => ({ ...f, [field]: value }))
   }
 
@@ -75,9 +76,11 @@ export default function UserForm() {
 
         <div>
           <label className="label">Role *</label>
-          <select className="input" required value={form.role} onChange={set('role')}>
-            {ROLES.map(r => <option key={r}>{r}</option>)}
-          </select>
+          <Select
+            value={form.role}
+            onChange={set('role')}
+            options={ROLES.map(r => ({ value: r, label: r }))}
+          />
         </div>
 
         {isEdit && (

@@ -9,6 +9,7 @@ import { getDoctors } from '../../api/doctors'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
+import Select from '../../components/Select'
 
 const toLocalDateTimeInput = (iso) => format(new Date(iso), "yyyy-MM-dd'T'HH:mm")
 
@@ -84,11 +85,14 @@ export default function AppointmentForm() {
       setForm(f => ({ ...f, statusId: String(statuses[0].id) }))
   }, [statuses])
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+  const set = (field) => (e) =>
+    setForm(f => ({ ...f, [field]: e?.target ? e.target.value : e }))
   const setV = (field) => (e) => setVitals(v => ({ ...v, [field]: e.target.value }))
 
   const handleSubmit = async e => {
     e.preventDefault()
+    if (!form.patientId) { setError('Please select a patient.'); return }
+    if (!form.doctorId) { setError('Please select a doctor.'); return }
     setSaving(true)
     setError(null)
     try {
@@ -143,26 +147,32 @@ export default function AppointmentForm() {
         <div className="card space-y-5">
           <div>
             <label className="label">Patient *</label>
-            <select className="input" required value={form.patientId} onChange={set('patientId')}>
-              <option value="">Select patient…</option>
-              {patients.map(p => (
-                <option key={p.id} value={p.id}>
-                  {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={form.patientId}
+              onChange={set('patientId')}
+              searchable
+              placeholder="Select patient…"
+              options={patients.map(p => ({
+                value: p.id,
+                label: [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' '),
+                sublabel: `${p.countryCode} ${p.phoneNumber}`,
+              }))}
+            />
           </div>
 
           <div>
             <label className="label">Doctor *</label>
-            <select className="input" required value={form.doctorId} onChange={set('doctorId')}>
-              <option value="">Select doctor…</option>
-              {doctors.map(d => (
-                <option key={d.id} value={d.id}>
-                  Dr. {[d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ')} — {d.specialization}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={form.doctorId}
+              onChange={set('doctorId')}
+              searchable
+              placeholder="Select doctor…"
+              options={doctors.map(d => ({
+                value: d.id,
+                label: `Dr. ${[d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ')}`,
+                sublabel: d.specialization,
+              }))}
+            />
           </div>
 
           <div>
@@ -173,9 +183,11 @@ export default function AppointmentForm() {
           {isEdit && (
             <div>
               <label className="label">Status</label>
-              <select className="input" value={form.statusId} onChange={set('statusId')}>
-                {statuses.map(s => <option key={s.id} value={s.id}>{s.displayValue}</option>)}
-              </select>
+              <Select
+                value={form.statusId}
+                onChange={set('statusId')}
+                options={statuses.map(s => ({ value: String(s.id), label: s.displayValue }))}
+              />
             </div>
           )}
 

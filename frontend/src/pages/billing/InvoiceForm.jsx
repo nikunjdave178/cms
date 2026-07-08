@@ -6,6 +6,7 @@ import { getAppointments } from '../../api/appointments'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
+import Select from '../../components/Select'
 
 const fullName = (p) => [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')
 const inr = (v) => '₹' + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -46,7 +47,8 @@ export default function InvoiceForm() {
       .catch(() => setAppointments([]))
   }, [form.patientId])
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+  const set = (field) => (e) =>
+    setForm(f => ({ ...f, [field]: e?.target ? e.target.value : e }))
 
   const addItem = () => setItems(prev => [...prev, emptyItem()])
   const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx))
@@ -63,6 +65,7 @@ export default function InvoiceForm() {
     setSaving(true)
     setError(null)
     try {
+      if (!form.patientId) throw new Error('Please select a patient.')
       const validItems = items.filter(i => i.description && Number(i.unitPrice) > 0)
       if (validItems.length === 0) throw new Error('Add at least one item with a price.')
 
@@ -97,22 +100,33 @@ export default function InvoiceForm() {
         <div className="card space-y-5">
           <div>
             <label className="label">Patient *</label>
-            <select className="input" required value={form.patientId} onChange={set('patientId')}>
-              <option value="">Select patient…</option>
-              {patients.map(p => <option key={p.id} value={p.id}>{fullName(p)}</option>)}
-            </select>
+            <Select
+              value={form.patientId}
+              onChange={set('patientId')}
+              searchable
+              placeholder="Select patient…"
+              options={patients.map(p => ({
+                value: p.id,
+                label: fullName(p),
+                sublabel: `${p.countryCode} ${p.phoneNumber}`,
+              }))}
+            />
           </div>
 
           <div>
             <label className="label">Linked Appointment (optional)</label>
-            <select className="input" value={form.appointmentId} onChange={set('appointmentId')} disabled={!form.patientId}>
-              <option value="">None</option>
-              {appointments.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.doctorName} — {format(new Date(a.scheduledAt), 'd MMM yyyy')}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={form.appointmentId}
+              onChange={set('appointmentId')}
+              disabled={!form.patientId}
+              options={[
+                { value: '', label: 'None' },
+                ...appointments.map(a => ({
+                  value: a.id,
+                  label: `${a.doctorName} — ${format(new Date(a.scheduledAt), 'd MMM yyyy')}`,
+                })),
+              ]}
+            />
           </div>
 
           <div>
@@ -172,9 +186,12 @@ export default function InvoiceForm() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <label className="label mb-0">GST %</label>
-                <select className="input w-28 text-sm" value={form.gstRate} onChange={set('gstRate')}>
-                  {GST_RATES.map(r => <option key={r} value={r}>{r ? `${r}%` : 'No GST'}</option>)}
-                </select>
+                <Select
+                  className="w-28"
+                  value={form.gstRate}
+                  onChange={set('gstRate')}
+                  options={GST_RATES.map(r => ({ value: r, label: r ? `${r}%` : 'No GST' }))}
+                />
               </div>
               <div className="text-right text-sm space-y-1">
                 <div className="text-gray-500">Subtotal: <span className="font-medium text-gray-800">{inr(subtotal)}</span></div>
@@ -191,10 +208,14 @@ export default function InvoiceForm() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Payment Mode</label>
-              <select className="input" value={form.paymentModeId} onChange={set('paymentModeId')}>
-                <option value="">None</option>
-                {paymentModes.map(m => <option key={m.id} value={m.id}>{m.displayValue}</option>)}
-              </select>
+              <Select
+                value={form.paymentModeId}
+                onChange={set('paymentModeId')}
+                options={[
+                  { value: '', label: 'None' },
+                  ...paymentModes.map(m => ({ value: String(m.id), label: m.displayValue })),
+                ]}
+              />
             </div>
             {form.paymentModeId && (
               <div>

@@ -1,44 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Select from './Select'
+import { parseSegments, maskDateText, validateSegments, toIso } from '../utils/dateMask'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
-const pad = (n) => String(n).padStart(2, '0')
-const toIso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`
 const formatDisplay = (iso) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso ?? '')
   return m ? `${m[3]}/${m[2]}/${m[1]}` : ''
 }
 
-// Accepts dd/mm/yyyy, dd-mm-yyyy or yyyy-mm-dd typed input; year must be 4 digits.
-function parseTyped(text) {
-  const t = text.trim()
-  let d, m, y
-  let match = /^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/.exec(t)
-  if (match) { [, d, m, y] = match }
-  else {
-    match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t)
-    if (match) { [, y, m, d] = match }
-    else return null
-  }
-  y = Number(y); m = Number(m); d = Number(d)
-  const date = new Date(y, m - 1, d)
-  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null
-  return { y, m: m - 1, d }
-}
-
 /**
- * Custom date picker: masked dd/mm/yyyy typing + calendar popover with
- * month/year dropdown navigation, constrained to [minYear, maxDate].
- * `value`/`onChange` use ISO yyyy-mm-dd strings.
+ * Standard date field: types like a mask (slashes added automatically,
+ * validated as you go) with a calendar popover, constrained to
+ * [minYear, maxDate]. `value`/`onChange` use ISO yyyy-mm-dd strings.
+ * `error` is the form-level message; typing errors take precedence.
  */
 export default function DatePicker({
-  value, onChange, minYear = 1900, maxDate = new Date(), required = false,
-  placeholder = 'DD/MM/YYYY', className = '', id,
+  value, onChange, minYear = 1900, maxDate = new Date(),
+  placeholder = 'DD/MM/YYYY', error = null, id,
 }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState(formatDisplay(value))
+  const [typeError, setTypeError] = useState(null)
   const today = new Date()
   const max = maxDate ?? today
   const maxIso = toIso(max.getFullYear(), max.getMonth(), max.getDate())
@@ -47,8 +32,18 @@ export default function DatePicker({
   const [viewYear, setViewYear] = useState(initial.getFullYear())
   const [viewMonth, setViewMonth] = useState(initial.getMonth())
   const rootRef = useRef(null)
+  const lastEmitted = useRef(value)
 
-  useEffect(() => { setText(formatDisplay(value)) }, [value])
+  const emit = (v) => { lastEmitted.current = v; onChange(v) }
+
+  // Sync from external value changes only — never wipe in-progress typing.
+  useEffect(() => {
+    if (value !== lastEmitted.current) {
+      lastEmitted.current = value
+      setText(formatDisplay(value))
+      setTypeError(null)
+    }
+  }, [value])
 
   useEffect(() => {
     if (!open) return
@@ -65,21 +60,37 @@ export default function DatePicker({
     return list
   }, [minYear, max])
 
-  const commitTyped = (t) => {
-    if (!t.trim()) { onChange(''); return }
-    const parsed = parseTyped(t)
-    if (!parsed || parsed.y < minYear) { setText(formatDisplay(value)); return }
-    const iso = toIso(parsed.y, parsed.m, parsed.d)
-    if (iso > maxIso) { setText(formatDisplay(value)); return }
-    onChange(iso)
-    setViewYear(parsed.y)
-    setViewMonth(parsed.m)
+  const handleTyping = (e) => {
+    const masked = maskDateText(e.target.value, e.target.value.length < text.length)
+    setText(masked)
+    const segs = parseSegments(masked)
+    const err = validateSegments(segs, minYear, maxIso)
+    setTypeError(err)
+
+    const complete = segs.d.length === 2 && segs.m.length === 2 && segs.y.length === 4
+    if (complete && !err) {
+      const iso = toIso(Number(segs.y), Number(segs.m) - 1, Number(segs.d))
+      emit(iso)
+      setViewYear(Number(segs.y))
+      setViewMonth(Number(segs.m) - 1)
+    } else {
+      emit('')
+    }
+  }
+
+  const handleBlur = () => {
+    if (!text) { setTypeError(null); return }
+    const { d, m, y } = parseSegments(text)
+    if (!typeError && (d.length < 2 || m.length < 2 || y.length < 4))
+      setTypeError('Enter a complete date (DD/MM/YYYY).')
   }
 
   const selectDay = (day) => {
     const iso = toIso(viewYear, viewMonth, day)
     if (iso > maxIso) return
-    onChange(iso)
+    emit(iso)
+    setText(formatDisplay(iso))
+    setTypeError(null)
     setOpen(false)
   }
 
@@ -93,21 +104,22 @@ export default function DatePicker({
   const firstDow = new Date(viewYear, viewMonth, 1).getDay()
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
   const cells = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  const message = typeError ?? error
 
   return (
     <div ref={rootRef} className="relative">
       <div className="relative">
         <input
           id={id}
-          className={`input pr-9 ${className}`}
+          className={`input pr-9 ${message ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : ''}`}
           placeholder={placeholder}
-          required={required}
           value={text}
           maxLength={10}
           inputMode="numeric"
-          onChange={e => setText(e.target.value.replace(/[^\d/\-.]/g, ''))}
-          onBlur={e => commitTyped(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitTyped(text) } }}
+          autoComplete="off"
+          onChange={handleTyping}
+          onBlur={handleBlur}
+          onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
           onFocus={() => setOpen(true)}
         />
         <button
@@ -123,26 +135,27 @@ export default function DatePicker({
           </svg>
         </button>
       </div>
+      {message && <p className="mt-1 text-xs text-red-600">{message}</p>}
 
       {open && (
         <div className="absolute z-20 mt-1.5 w-72 rounded-xl border border-gray-200 bg-white p-3 shadow-lg">
           <div className="flex items-center gap-1.5 mb-2">
             <button type="button" onClick={() => moveMonth(-1)}
               className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Previous month">‹</button>
-            <select
-              className="flex-1 rounded-md border border-gray-200 px-1.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            <Select
+              size="sm"
+              className="flex-1"
               value={viewMonth}
-              onChange={e => setViewMonth(Number(e.target.value))}
-            >
-              {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-            </select>
-            <select
-              className="w-24 rounded-md border border-gray-200 px-1.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              onChange={v => setViewMonth(Number(v))}
+              options={MONTHS.map((m, i) => ({ value: i, label: m }))}
+            />
+            <Select
+              size="sm"
+              className="w-[4.75rem]"
               value={viewYear}
-              onChange={e => setViewYear(Number(e.target.value))}
-            >
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+              onChange={v => setViewYear(Number(v))}
+              options={years.map(y => ({ value: y, label: String(y) }))}
+            />
             <button type="button" onClick={() => moveMonth(1)}
               className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100" aria-label="Next month">›</button>
           </div>
@@ -179,7 +192,7 @@ export default function DatePicker({
 
           <div className="mt-2 flex items-center justify-between border-t border-gray-100 pt-2">
             <button type="button" className="text-xs text-gray-500 hover:text-red-600"
-              onClick={() => { onChange(''); setOpen(false) }}>
+              onClick={() => { emit(''); setText(''); setTypeError(null); setOpen(false) }}>
               Clear
             </button>
             <button type="button" className="text-xs font-medium text-blue-600 hover:text-blue-700"

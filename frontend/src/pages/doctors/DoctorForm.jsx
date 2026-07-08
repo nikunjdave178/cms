@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getDoctor, createDoctor, updateDoctor } from '../../api/doctors'
 import Spinner from '../../components/Spinner'
+import Select from '../../components/Select'
 import CountryCodeSelect from '../../components/CountryCodeSelect'
 import { PHONE_LENGTHS } from '../../data/countries'
 
@@ -100,9 +101,11 @@ export default function DoctorForm() {
 
         <div>
           <label className="label">Specialisation *</label>
-          <select className="input" required value={form.specialization} onChange={set('specialization')}>
-            {SPECIALIZATIONS.map(s => <option key={s}>{s}</option>)}
-          </select>
+          <Select
+            value={form.specialization}
+            onChange={set('specialization')}
+            options={SPECIALIZATIONS.map(s => ({ value: s, label: s }))}
+          />
         </div>
 
         <div className="grid grid-cols-3 gap-4">

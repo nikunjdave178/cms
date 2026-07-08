@@ -5,6 +5,7 @@ import { useStaticValues } from '../../hooks/useStaticValues'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
+import Select from '../../components/Select'
 
 const statusColors = {
   Scheduled: 'badge bg-indigo-100 text-indigo-700',
@@ -49,25 +50,26 @@ export default function AppointmentList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <select
-          className="input w-48"
+        <Select
+          className="w-48"
           value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); load(e.target.value) }}
-        >
-          <option value="">All Statuses</option>
-          {statuses.map(s => <option key={s.id} value={s.id}>{s.displayValue}</option>)}
-        </select>
+          onChange={v => { setStatusFilter(v); load(v) }}
+          options={[
+            { value: '', label: 'All Statuses' },
+            ...statuses.map(s => ({ value: String(s.id), label: s.displayValue })),
+          ]}
+        />
         <div className="flex-1" />
         <Link to="/appointments/new" className="btn-primary">+ New Appointment</Link>
       </div>
 
       {loading ? <Spinner /> : (
-        <div className="card p-0 overflow-hidden">
+        <div className="card p-0 overflow-visible">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {['Patient', 'Doctor', 'Specialisation', 'Date & Time', 'Reason', 'Status', ''].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide first:rounded-tl-xl last:rounded-tr-xl">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -87,13 +89,13 @@ export default function AppointmentList() {
                   </td>
                   <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{a.reason ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <select
-                      className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-white"
-                      value={a.statusId}
-                      onChange={e => handleStatusChange(a, e.target.value)}
-                    >
-                      {statuses.map(s => <option key={s.id} value={s.id}>{s.displayValue}</option>)}
-                    </select>
+                    <Select
+                      size="sm"
+                      className="w-28"
+                      value={String(a.statusId)}
+                      onChange={v => handleStatusChange(a, v)}
+                      options={statuses.map(s => ({ value: String(s.id), label: s.displayValue }))}
+                    />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link to={`/appointments/${a.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>

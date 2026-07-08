@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
+import Select from '../../components/Select'
 
 const statusColors = {
   Pending: 'badge bg-yellow-100 text-yellow-800',
@@ -15,6 +16,8 @@ const statusColors = {
 
 const inr = (val) =>
   '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const shortId = (id) => String(id).slice(0, 8).toUpperCase()
 
 export default function InvoiceList() {
   const { hasRole } = useAuth()
@@ -79,14 +82,15 @@ export default function InvoiceList() {
       </div>
 
       <div className="flex items-center gap-3">
-        <select
-          className="input w-48"
+        <Select
+          className="w-48"
           value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); load(e.target.value) }}
-        >
-          <option value="">All Statuses</option>
-          {invoiceStatuses.map(s => <option key={s.id} value={s.id}>{s.displayValue}</option>)}
-        </select>
+          onChange={v => { setStatusFilter(v); load(v) }}
+          options={[
+            { value: '', label: 'All Statuses' },
+            ...invoiceStatuses.map(s => ({ value: String(s.id), label: s.displayValue })),
+          ]}
+        />
         <div className="flex-1" />
         {canEdit && <Link to="/billing/new" className="btn-primary">+ New Invoice</Link>}
       </div>
@@ -106,7 +110,7 @@ export default function InvoiceList() {
                 <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No invoices found.</td></tr>
               ) : invoices.map(i => (
                 <tr key={i.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-400">#{i.id}</td>
+                  <td className="px-4 py-3 text-gray-400 font-mono text-xs" title={i.id}>{shortId(i.id)}</td>
                   <td className="px-4 py-3 font-medium">
                     <Link to={`/patients/${i.patientId}`} className="text-indigo-600 hover:underline">{i.patientName}</Link>
                   </td>
@@ -137,14 +141,16 @@ export default function InvoiceList() {
       {markPaidTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-96 space-y-4">
-            <h3 className="font-semibold text-gray-800">Mark Invoice #{markPaidTarget.id} as Paid</h3>
+            <h3 className="font-semibold text-gray-800">Mark Invoice {shortId(markPaidTarget.id)} as Paid</h3>
             <p className="text-sm text-gray-500">Total: {inr(markPaidTarget.totalAmount)}</p>
             <div>
               <label className="label">Payment Mode</label>
-              <select className="input" value={paymentModeId} onChange={e => setPaymentModeId(e.target.value)}>
-                <option value="">Select…</option>
-                {paymentModes.map(m => <option key={m.id} value={m.id}>{m.displayValue}</option>)}
-              </select>
+              <Select
+                value={paymentModeId}
+                onChange={setPaymentModeId}
+                placeholder="Select…"
+                options={paymentModes.map(m => ({ value: String(m.id), label: m.displayValue }))}
+              />
             </div>
             {paymentModeId && (
               <div>
