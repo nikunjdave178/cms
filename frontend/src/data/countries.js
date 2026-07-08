@@ -254,6 +254,12 @@ export const PHONE_LENGTHS = {
   '+92': [10], '+880': [10], '+94': [9], '+977': [10], '+966': [9], '+974': [8],
 }
 
+// Clinic's home country pinned to the top; the rest keep alphabetical order.
+export const COUNTRIES_INDIA_FIRST = [
+  ...COUNTRIES.filter(c => c.iso2 === 'IN'),
+  ...COUNTRIES.filter(c => c.iso2 !== 'IN'),
+]
+
 // Several dial codes are shared (+1, +44, +7…): resolve to the primary country.
 const PREFERRED_ISO_BY_DIAL = { '+1': 'US', '+44': 'GB', '+7': 'RU', '+262': 'RE', '+590': 'GP' }
 

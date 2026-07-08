@@ -17,6 +17,7 @@ public class Patient
     public string? City { get; set; }
     public string? State { get; set; }
     public string? Pincode { get; set; }
+    public string? Country { get; set; }
     public int? BloodGroupId { get; set; }
     public StaticValue? BloodGroup { get; set; }
     public string? Notes { get; set; }

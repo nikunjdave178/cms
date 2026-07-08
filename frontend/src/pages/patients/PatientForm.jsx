@@ -5,13 +5,13 @@ import { useStaticValues } from '../../hooks/useStaticValues'
 import Spinner from '../../components/Spinner'
 import DatePicker from '../../components/DatePicker'
 import CountryCodeSelect from '../../components/CountryCodeSelect'
-import { PHONE_LENGTHS } from '../../data/countries'
+import { PHONE_LENGTHS, COUNTRIES_INDIA_FIRST } from '../../data/countries'
 import { IN_STATES, IN_CITIES, CITY_PINCODES, lookupPincode, lookupCity } from '../../data/pincodes'
 
 const empty = {
   firstName: '', middleName: '', lastName: '', dateOfBirth: '',
   genderId: '', countryCode: '+91', phoneNumber: '',
-  email: '', address: '', city: '', state: '', pincode: '',
+  email: '', address: '', city: '', state: '', pincode: '', country: 'India',
   bloodGroupId: '', notes: ''
 }
 
@@ -56,7 +56,7 @@ function validate(form) {
   if (form.state.trim().length > 100) errs.state = 'Max 100 characters.'
 
   if (form.pincode) {
-    if (form.countryCode === '+91' && !/^\d{6}$/.test(form.pincode))
+    if (form.country === 'India' && !/^\d{6}$/.test(form.pincode))
       errs.pincode = 'Indian PIN codes are exactly 6 digits.'
     else if (!/^[A-Za-z0-9][A-Za-z0-9 -]{2,9}$/.test(form.pincode))
       errs.pincode = '3–10 letters, digits, spaces or hyphens.'
@@ -100,6 +100,7 @@ export default function PatientForm() {
         countryCode: p.countryCode, phoneNumber: p.phoneNumber,
         email: p.email ?? '', address: p.address ?? '',
         city: p.city ?? '', state: p.state ?? '', pincode: p.pincode ?? '',
+        country: p.country ?? 'India',
         bloodGroupId: p.bloodGroupId ? String(p.bloodGroupId) : '',
         notes: p.notes ?? ''
       }))
@@ -124,7 +125,7 @@ export default function PatientForm() {
   const setPincode = (e) => {
     const pin = e.target.value.replace(/[^A-Za-z0-9 -]/g, '').slice(0, 10)
     setForm(f => {
-      const found = lookupPincode(pin)
+      const found = f.country === 'India' ? lookupPincode(pin) : {}
       return {
         ...f,
         pincode: pin,
@@ -139,7 +140,7 @@ export default function PatientForm() {
   const setCity = (e) => {
     const city = e.target.value
     setForm(f => {
-      const found = lookupCity(city)
+      const found = f.country === 'India' ? lookupCity(city) : null
       return {
         ...f,
         city,
@@ -176,6 +177,7 @@ export default function PatientForm() {
         city: form.city.trim() || null,
         state: form.state.trim() || null,
         pincode: form.pincode.trim() || null,
+        country: form.country.trim() || null,
         bloodGroupId: form.bloodGroupId ? Number(form.bloodGroupId) : null,
         notes: form.notes.trim() || null,
       }
@@ -201,6 +203,7 @@ export default function PatientForm() {
 
   const inputCls = (field) => `input ${errors[field] ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : ''}`
   const phoneLengths = PHONE_LENGTHS[form.countryCode]
+  const isIndia = form.country === 'India'
 
   return (
     <div className="max-w-2xl">
@@ -296,54 +299,67 @@ export default function PatientForm() {
           <FieldError msg={errors.address} />
         </div>
 
-        {/* Pincode / City / State — free text with dropdown suggestions + autofill */}
-        <div className="grid grid-cols-3 gap-4">
+        {/* Country / Pincode / City / State — free text with dropdown suggestions + autofill */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label">Country</label>
+            <select className={inputCls('country')} value={form.country} onChange={set('country')}>
+              {COUNTRIES_INDIA_FIRST.map(c => <option key={c.iso2} value={c.name}>{c.name}</option>)}
+            </select>
+            <FieldError msg={errors.country} />
+          </div>
           <div>
             <label className="label">Pincode / ZIP</label>
             <input
               className={inputCls('pincode')}
-              list="pincode-options"
+              list={isIndia ? 'pincode-options' : undefined}
               value={form.pincode}
               onChange={setPincode}
               maxLength={10}
-              placeholder="e.g. 400001"
+              placeholder={isIndia ? 'e.g. 400001' : 'ZIP / postal code'}
               autoComplete="off"
             />
-            <datalist id="pincode-options">
-              {CITY_PINCODES.map(e => (
-                <option key={e.pin} value={e.pin}>{e.city}, {e.state}</option>
-              ))}
-            </datalist>
+            {isIndia && (
+              <datalist id="pincode-options">
+                {CITY_PINCODES.map(e => (
+                  <option key={e.pin} value={e.pin}>{e.city}, {e.state}</option>
+                ))}
+              </datalist>
+            )}
             <FieldError msg={errors.pincode} />
           </div>
           <div>
             <label className="label">City</label>
             <input
               className={inputCls('city')}
-              list="city-options"
+              list={isIndia ? 'city-options' : undefined}
               maxLength={100}
               value={form.city}
               onChange={setCity}
               autoComplete="off"
             />
-            <datalist id="city-options">
-              {IN_CITIES.map(e => <option key={e.city} value={e.city}>{e.state}</option>)}
-            </datalist>
+            {isIndia && (
+              <datalist id="city-options">
+                {IN_CITIES.map(e => <option key={e.city} value={e.city}>{e.state}</option>)}
+              </datalist>
+            )}
             <FieldError msg={errors.city} />
           </div>
           <div>
             <label className="label">State</label>
             <input
               className={inputCls('state')}
-              list="state-options"
+              list={isIndia ? 'state-options' : undefined}
               maxLength={100}
               value={form.state}
               onChange={set('state')}
               autoComplete="off"
             />
-            <datalist id="state-options">
-              {IN_STATES.map(s => <option key={s} value={s} />)}
-            </datalist>
+            {isIndia && (
+              <datalist id="state-options">
+                {IN_STATES.map(s => <option key={s} value={s} />)}
+              </datalist>
+            )}
             <FieldError msg={errors.state} />
           </div>
         </div>

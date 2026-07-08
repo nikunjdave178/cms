@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { COUNTRIES, findCountryByDial, flagUrl } from '../data/countries'
+import { COUNTRIES, COUNTRIES_INDIA_FIRST, findCountryByDial, flagUrl } from '../data/countries'
 
 function Flag({ iso2, emoji }) {
   return (
@@ -41,7 +41,7 @@ export default function CountryCodeSelect({ value, onChange, className = '' }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return COUNTRIES
+    if (!q) return COUNTRIES_INDIA_FIRST
     return COUNTRIES.filter(c =>
       c.name.toLowerCase().includes(q) ||
       c.dial.includes(q) ||

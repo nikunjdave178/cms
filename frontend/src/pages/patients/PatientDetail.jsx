@@ -55,7 +55,7 @@ export default function PatientDetail() {
   if (!patient) return <p className="text-gray-500">Patient not found.</p>
 
   const totalBilled = invoices.reduce((s, i) => s + Number(i.totalAmount), 0)
-  const address = [patient.address, patient.city, patient.state, patient.pincode].filter(Boolean).join(', ')
+  const address = [patient.address, patient.city, patient.state, patient.pincode, patient.country].filter(Boolean).join(', ')
 
   return (
     <div className="space-y-6 max-w-4xl">

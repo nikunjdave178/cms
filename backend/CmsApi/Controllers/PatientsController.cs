@@ -65,6 +65,7 @@ public class PatientsController(AppDbContext db) : ControllerBase
             City = NullIfBlank(req.City),
             State = NullIfBlank(req.State),
             Pincode = NullIfBlank(req.Pincode),
+            Country = NullIfBlank(req.Country),
             BloodGroupId = req.BloodGroupId,
             Notes = NullIfBlank(req.Notes)
         };
@@ -102,6 +103,7 @@ public class PatientsController(AppDbContext db) : ControllerBase
         patient.City = NullIfBlank(req.City);
         patient.State = NullIfBlank(req.State);
         patient.Pincode = NullIfBlank(req.Pincode);
+        patient.Country = NullIfBlank(req.Country);
         patient.BloodGroupId = req.BloodGroupId;
         patient.Notes = NullIfBlank(req.Notes);
 
@@ -157,7 +159,7 @@ public class PatientsController(AppDbContext db) : ControllerBase
         p.PublicId, p.FirstName, p.MiddleName, p.LastName, p.DateOfBirth,
         p.GenderId, p.Gender.DisplayValue,
         p.CountryCode, p.PhoneNumber, p.Email,
-        p.Address, p.City, p.State, p.Pincode,
+        p.Address, p.City, p.State, p.Pincode, p.Country,
         p.BloodGroupId, p.BloodGroup?.DisplayValue,
         p.Notes, p.CreatedAt);
 }

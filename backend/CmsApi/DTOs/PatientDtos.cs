@@ -44,6 +44,9 @@ public record PatientRequest(
     [RegularExpression(@"^[A-Za-z0-9][A-Za-z0-9 \-]{2,9}$", ErrorMessage = "Pincode / ZIP must be 3–10 letters, digits, spaces or hyphens.")]
     string? Pincode,
 
+    [MaxLength(100, ErrorMessage = "Country cannot exceed 100 characters.")]
+    string? Country,
+
     int? BloodGroupId,
 
     [MaxLength(2000, ErrorMessage = "Notes cannot exceed 2000 characters.")]
@@ -65,6 +68,7 @@ public record PatientResponse(
     string? City,
     string? State,
     string? Pincode,
+    string? Country,
     int? BloodGroupId,
     string? BloodGroupDisplay,
     string? Notes,
