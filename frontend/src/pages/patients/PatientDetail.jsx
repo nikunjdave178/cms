@@ -62,7 +62,9 @@ export default function PatientDetail() {
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-2xl font-bold">{fullName(patient)}</h3>
-          <p className="text-gray-500 text-sm mt-1">Patient ID #{patient.id}</p>
+          <p className="text-gray-500 text-sm mt-1 font-mono" title={patient.id}>
+            Patient ID {String(patient.id).slice(0, 8).toUpperCase()}
+          </p>
         </div>
         <div className="flex gap-2">
           <Link to={`/patients/${id}/edit`} className="btn-secondary">Edit</Link>

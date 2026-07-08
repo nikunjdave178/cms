@@ -3,6 +3,7 @@ namespace CmsApi.Models;
 public class Vitals
 {
     public int Id { get; set; }
+    public Guid PublicId { get; set; }
     public int AppointmentId { get; set; }
     public Appointment Appointment { get; set; } = null!;
     public decimal? BloodPressureSystolic { get; set; }

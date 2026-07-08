@@ -67,8 +67,8 @@ export default function InvoiceForm() {
       if (validItems.length === 0) throw new Error('Add at least one item with a price.')
 
       await createInvoice({
-        patientId: Number(form.patientId),
-        appointmentId: form.appointmentId ? Number(form.appointmentId) : null,
+        patientId: form.patientId,
+        appointmentId: form.appointmentId || null,
         description: form.description || null,
         items: validItems.map(i => ({
           description: i.description,

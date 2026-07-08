@@ -28,8 +28,8 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, user.PublicId.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, user.PublicId.ToString()),
             new Claim(ClaimTypes.Name, user.FullName),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Role, user.Role),
@@ -54,11 +54,12 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
     [Authorize]
     public async Task<ActionResult<UserResponse>> Me()
     {
-        var id = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var user = await db.Users.FindAsync(id);
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
+            return Unauthorized();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.PublicId == id);
         return user is null ? Unauthorized() : ToResponse(user);
     }
 
     private static UserResponse ToResponse(User u) =>
-        new(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt);
+        new(u.PublicId, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt);
 }

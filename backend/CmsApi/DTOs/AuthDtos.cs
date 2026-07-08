@@ -1,11 +1,16 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CmsApi.Dtos;
 
-public record LoginRequest(string Email, string Password);
+public record LoginRequest(
+    [Required] [EmailAddress] string Email,
+    [Required] string Password
+);
 
 public record LoginResponse(string Token, DateTime ExpiresAt, UserResponse User);
 
 public record UserResponse(
-    int Id,
+    Guid Id,
     string FullName,
     string Email,
     string Role,
@@ -13,6 +18,16 @@ public record UserResponse(
     DateTime CreatedAt
 );
 
-public record CreateUserRequest(string FullName, string Email, string Password, string Role);
+public record CreateUserRequest(
+    [Required(AllowEmptyStrings = false)] [MaxLength(150)] string FullName,
+    [Required] [EmailAddress] [MaxLength(255)] string Email,
+    [Required] [MinLength(8, ErrorMessage = "Password must be at least 8 characters.")] string Password,
+    [Required] string Role
+);
 
-public record UpdateUserRequest(string FullName, string Role, bool IsActive, string? Password);
+public record UpdateUserRequest(
+    [Required(AllowEmptyStrings = false)] [MaxLength(150)] string FullName,
+    [Required] string Role,
+    bool IsActive,
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters.")] string? Password
+);

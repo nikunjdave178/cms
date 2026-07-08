@@ -13,35 +13,42 @@ namespace CmsApi.Controllers;
 public class BillingController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IEnumerable<InvoiceResponse>> GetAll(
-        [FromQuery] int? patientId,
+    public async Task<ActionResult<IEnumerable<InvoiceResponse>>> GetAll(
+        [FromQuery] Guid? patientId,
         [FromQuery] int? statusId)
     {
         var query = db.Invoices
             .Include(i => i.Patient)
+            .Include(i => i.Appointment)
             .Include(i => i.Status)
             .Include(i => i.PaymentMode)
             .Include(i => i.Items)
             .AsQueryable();
 
-        if (patientId.HasValue) query = query.Where(i => i.PatientId == patientId);
+        if (patientId.HasValue)
+        {
+            var pid = await db.Patients.ResolveIdAsync(patientId.Value);
+            if (pid is null) return Ok(Array.Empty<InvoiceResponse>());
+            query = query.Where(i => i.PatientId == pid);
+        }
         if (statusId.HasValue) query = query.Where(i => i.StatusId == statusId);
 
-        return await query
+        return Ok(await query
             .OrderByDescending(i => i.IssuedAt)
             .Select(i => ToResponse(i))
-            .ToListAsync();
+            .ToListAsync());
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<InvoiceResponse>> GetById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<InvoiceResponse>> GetById(Guid id)
     {
         var i = await db.Invoices
             .Include(i => i.Patient)
+            .Include(i => i.Appointment)
             .Include(i => i.Status)
             .Include(i => i.PaymentMode)
             .Include(i => i.Items)
-            .FirstOrDefaultAsync(i => i.Id == id);
+            .FirstOrDefaultAsync(i => i.PublicId == id);
         return i is null ? NotFound() : ToResponse(i);
     }
 
@@ -52,8 +59,15 @@ public class BillingController(AppDbContext db) : ControllerBase
         if (req.Items == null || req.Items.Count == 0)
             return BadRequest("At least one line item is required.");
 
-        var patient = await db.Patients.FindAsync(req.PatientId);
-        if (patient is null) return BadRequest("Patient not found.");
+        var patientId = await db.Patients.ResolveIdAsync(req.PatientId);
+        if (patientId is null) return BadRequest("Patient not found.");
+
+        int? appointmentId = null;
+        if (req.AppointmentId.HasValue)
+        {
+            appointmentId = await db.Appointments.ResolveIdAsync(req.AppointmentId.Value);
+            if (appointmentId is null) return BadRequest("Appointment not found.");
+        }
 
         var subtotal = req.Items.Sum(item => item.Quantity * item.UnitPrice);
         var gstAmount = req.GstRate.HasValue ? Math.Round(subtotal * req.GstRate.Value / 100, 2) : 0m;
@@ -61,8 +75,8 @@ public class BillingController(AppDbContext db) : ControllerBase
 
         var invoice = new Invoice
         {
-            PatientId = req.PatientId,
-            AppointmentId = req.AppointmentId,
+            PatientId = patientId.Value,
+            AppointmentId = appointmentId,
             Description = req.Description,
             SubtotalAmount = subtotal,
             GstRate = req.GstRate,
@@ -83,23 +97,25 @@ public class BillingController(AppDbContext db) : ControllerBase
 
         var loaded = await db.Invoices
             .Include(i => i.Patient)
+            .Include(i => i.Appointment)
             .Include(i => i.Status)
             .Include(i => i.PaymentMode)
             .Include(i => i.Items)
             .FirstAsync(i => i.Id == invoice.Id);
-        return CreatedAtAction(nameof(GetById), new { id = invoice.Id }, ToResponse(loaded));
+        return CreatedAtAction(nameof(GetById), new { id = loaded.PublicId }, ToResponse(loaded));
     }
 
-    [HttpPatch("{id}/status")]
+    [HttpPatch("{id:guid}/status")]
     [Authorize(Roles = Roles.AdminReceptionist)]
-    public async Task<ActionResult<InvoiceResponse>> UpdateStatus(int id, InvoiceUpdateStatusRequest req)
+    public async Task<ActionResult<InvoiceResponse>> UpdateStatus(Guid id, InvoiceUpdateStatusRequest req)
     {
         var invoice = await db.Invoices
             .Include(i => i.Patient)
+            .Include(i => i.Appointment)
             .Include(i => i.Status)
             .Include(i => i.PaymentMode)
             .Include(i => i.Items)
-            .FirstOrDefaultAsync(i => i.Id == id);
+            .FirstOrDefaultAsync(i => i.PublicId == id);
         if (invoice is null) return NotFound();
 
         invoice.StatusId = req.StatusId;
@@ -118,11 +134,11 @@ public class BillingController(AppDbContext db) : ControllerBase
         return ToResponse(invoice);
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.AdminReceptionist)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
-        var invoice = await db.Invoices.FindAsync(id);
+        var invoice = await db.Invoices.FirstOrDefaultAsync(i => i.PublicId == id);
         if (invoice is null) return NotFound();
 
         db.Invoices.Remove(invoice);
@@ -149,13 +165,13 @@ public class BillingController(AppDbContext db) : ControllerBase
         string.IsNullOrWhiteSpace(middle) ? $"{first} {last}" : $"{first} {middle} {last}";
 
     private static InvoiceResponse ToResponse(Invoice i) => new(
-        i.Id,
-        i.PatientId,
+        i.PublicId,
+        i.Patient.PublicId,
         FullName(i.Patient.FirstName, i.Patient.MiddleName, i.Patient.LastName),
-        i.AppointmentId,
+        i.Appointment?.PublicId,
         i.Description,
         i.Items.Select(item => new InvoiceItemResponse(
-            item.Id, item.Description, item.Quantity, item.UnitPrice,
+            item.PublicId, item.Description, item.Quantity, item.UnitPrice,
             item.Quantity * item.UnitPrice)).ToList(),
         i.SubtotalAmount,
         i.GstRate,

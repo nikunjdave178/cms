@@ -3,6 +3,7 @@ namespace CmsApi.Models;
 public class InvoiceItem
 {
     public int Id { get; set; }
+    public Guid PublicId { get; set; }
     public int InvoiceId { get; set; }
     public Invoice Invoice { get; set; } = null!;
     public string Description { get; set; } = string.Empty;

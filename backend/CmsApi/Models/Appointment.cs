@@ -3,6 +3,7 @@ namespace CmsApi.Models;
 public class Appointment
 {
     public int Id { get; set; }
+    public Guid PublicId { get; set; }
     public int PatientId { get; set; }
     public Patient Patient { get; set; } = null!;
     public int DoctorId { get; set; }

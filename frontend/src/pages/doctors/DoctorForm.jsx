@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getDoctor, createDoctor, updateDoctor } from '../../api/doctors'
 import Spinner from '../../components/Spinner'
+import CountryCodeSelect from '../../components/CountryCodeSelect'
+import { PHONE_LENGTHS } from '../../data/countries'
 
 const SPECIALIZATIONS = [
   'General Practice', 'Cardiology', 'Dermatology', 'Endocrinology',
@@ -9,8 +11,6 @@ const SPECIALIZATIONS = [
   'Ophthalmology', 'Orthopaedics', 'Paediatrics', 'Psychiatry',
   'Pulmonology', 'Radiology', 'Surgery', 'Urology',
 ]
-
-const COUNTRY_CODES = ['+91', '+1', '+44', '+61', '+971']
 
 const empty = {
   firstName: '', middleName: '', lastName: '',
@@ -41,10 +41,23 @@ export default function DoctorForm() {
       .finally(() => setLoading(false))
   }, [id, isEdit])
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+  const set = (field) => (e) =>
+    setForm(f => ({ ...f, [field]: e?.target ? e.target.value : e }))
+
+  const setPhone = (e) => {
+    const lengths = PHONE_LENGTHS[form.countryCode]
+    const maxLen = lengths ? Math.max(...lengths) : 15
+    setForm(f => ({ ...f, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, maxLen) }))
+  }
 
   const handleSubmit = async e => {
     e.preventDefault()
+    const lengths = PHONE_LENGTHS[form.countryCode]
+    if (lengths ? !lengths.includes(form.phoneNumber.length)
+        : (form.phoneNumber.length < 6 || form.phoneNumber.length > 15)) {
+      setError(`Mobile number must be ${lengths ? lengths.join(' or ') : '6–15'} digits.`)
+      return
+    }
     setSaving(true)
     setError(null)
     try {
@@ -95,13 +108,11 @@ export default function DoctorForm() {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="label">Country Code *</label>
-            <select className="input" value={form.countryCode} onChange={set('countryCode')}>
-              {COUNTRY_CODES.map(c => <option key={c}>{c}</option>)}
-            </select>
+            <CountryCodeSelect value={form.countryCode} onChange={set('countryCode')} />
           </div>
           <div className="col-span-2">
             <label className="label">Mobile Number *</label>
-            <input className="input" required value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="98765 43210" />
+            <input className="input" required inputMode="numeric" value={form.phoneNumber} onChange={setPhone} placeholder="9876543210" />
           </div>
         </div>
 

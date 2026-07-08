@@ -17,6 +17,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Business entities carry a UUID PublicId for external identity (API surface)
+        // while keeping sequential int PKs internally for cheap FK joins.
+        ConfigurePublicId<Patient>(modelBuilder);
+        ConfigurePublicId<Doctor>(modelBuilder);
+        ConfigurePublicId<Appointment>(modelBuilder);
+        ConfigurePublicId<Invoice>(modelBuilder);
+        ConfigurePublicId<InvoiceItem>(modelBuilder);
+        ConfigurePublicId<Vitals>(modelBuilder);
+        ConfigurePublicId<User>(modelBuilder);
+
         // Patient → Gender (StaticValue)
         modelBuilder.Entity<Patient>()
             .HasOne(p => p.Gender)
@@ -132,5 +142,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new StaticValue { Id = 22, StaticTypeId = 5, Code = "NET_BANKING", DisplayValue = "Net Banking", SortOrder = 4 },
             new StaticValue { Id = 23, StaticTypeId = 5, Code = "INSURANCE", DisplayValue = "Insurance", SortOrder = 5 }
         );
+    }
+
+    private static void ConfigurePublicId<TEntity>(ModelBuilder modelBuilder) where TEntity : class
+    {
+        modelBuilder.Entity<TEntity>()
+            .Property<Guid>("PublicId")
+            .HasDefaultValueSql("gen_random_uuid()");
+        modelBuilder.Entity<TEntity>()
+            .HasIndex("PublicId")
+            .IsUnique();
     }
 }

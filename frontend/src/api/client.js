@@ -20,7 +20,15 @@ client.interceptors.response.use(
       localStorage.removeItem(AUTH_STORAGE_KEY)
       window.dispatchEvent(new Event('cms:unauthorized'))
     }
-    const msg = err.response?.data?.title || err.response?.data || err.message || 'Request failed'
+    const data = err.response?.data
+    // ASP.NET ValidationProblem: surface per-field errors so forms can highlight them.
+    if (data?.errors && typeof data.errors === 'object') {
+      const flat = Object.values(data.errors).flat().join(' ')
+      const e = new Error(flat || data.title || 'Validation failed')
+      e.fields = data.errors
+      return Promise.reject(e)
+    }
+    const msg = data?.title || data || err.message || 'Request failed'
     return Promise.reject(new Error(typeof msg === 'string' ? msg : JSON.stringify(msg)))
   }
 )

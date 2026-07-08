@@ -47,7 +47,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
             MonthRevenue = monthRevenue,
             RecentAppointments = recentAppointments.Select(a => new
             {
-                a.Id,
+                Id = a.PublicId,
                 PatientName = FullName(a.Patient.FirstName, a.Patient.MiddleName, a.Patient.LastName),
                 DoctorName = $"Dr. {FullName(a.Doctor.FirstName, a.Doctor.MiddleName, a.Doctor.LastName)}",
                 a.ScheduledAt,

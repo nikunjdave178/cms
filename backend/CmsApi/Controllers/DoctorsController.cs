@@ -19,10 +19,10 @@ public class DoctorsController(AppDbContext db) : ControllerBase
             .Select(d => ToResponse(d))
             .ToListAsync();
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<DoctorResponse>> GetById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<DoctorResponse>> GetById(Guid id)
     {
-        var d = await db.Doctors.FindAsync(id);
+        var d = await db.Doctors.FirstOrDefaultAsync(d => d.PublicId == id);
         return d is null ? NotFound() : ToResponse(d);
     }
 
@@ -32,44 +32,44 @@ public class DoctorsController(AppDbContext db) : ControllerBase
     {
         var doctor = new Doctor
         {
-            FirstName = req.FirstName,
-            MiddleName = req.MiddleName,
-            LastName = req.LastName,
-            Specialization = req.Specialization,
+            FirstName = req.FirstName.Trim(),
+            MiddleName = string.IsNullOrWhiteSpace(req.MiddleName) ? null : req.MiddleName.Trim(),
+            LastName = req.LastName.Trim(),
+            Specialization = req.Specialization.Trim(),
             CountryCode = req.CountryCode,
             PhoneNumber = req.PhoneNumber,
-            Email = req.Email
+            Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email.Trim()
         };
 
         db.Doctors.Add(doctor);
         await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = doctor.Id }, ToResponse(doctor));
+        return CreatedAtAction(nameof(GetById), new { id = doctor.PublicId }, ToResponse(doctor));
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
-    public async Task<ActionResult<DoctorResponse>> Update(int id, DoctorRequest req)
+    public async Task<ActionResult<DoctorResponse>> Update(Guid id, DoctorRequest req)
     {
-        var doctor = await db.Doctors.FindAsync(id);
+        var doctor = await db.Doctors.FirstOrDefaultAsync(d => d.PublicId == id);
         if (doctor is null) return NotFound();
 
-        doctor.FirstName = req.FirstName;
-        doctor.MiddleName = req.MiddleName;
-        doctor.LastName = req.LastName;
-        doctor.Specialization = req.Specialization;
+        doctor.FirstName = req.FirstName.Trim();
+        doctor.MiddleName = string.IsNullOrWhiteSpace(req.MiddleName) ? null : req.MiddleName.Trim();
+        doctor.LastName = req.LastName.Trim();
+        doctor.Specialization = req.Specialization.Trim();
         doctor.CountryCode = req.CountryCode;
         doctor.PhoneNumber = req.PhoneNumber;
-        doctor.Email = req.Email;
+        doctor.Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email.Trim();
 
         await db.SaveChangesAsync();
         return ToResponse(doctor);
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
-        var doctor = await db.Doctors.FindAsync(id);
+        var doctor = await db.Doctors.FirstOrDefaultAsync(d => d.PublicId == id);
         if (doctor is null) return NotFound();
 
         db.Doctors.Remove(doctor);
@@ -78,6 +78,6 @@ public class DoctorsController(AppDbContext db) : ControllerBase
     }
 
     private static DoctorResponse ToResponse(Doctor d) => new(
-        d.Id, d.FirstName, d.MiddleName, d.LastName,
+        d.PublicId, d.FirstName, d.MiddleName, d.LastName,
         d.Specialization, d.CountryCode, d.PhoneNumber, d.Email);
 }

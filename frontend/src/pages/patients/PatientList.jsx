@@ -31,8 +31,13 @@ export default function PatientList() {
   }
 
   const handleDelete = async () => {
-    await deletePatient(deleteTarget.id)
-    setDeleteTarget(null)
+    try {
+      await deletePatient(deleteTarget.id)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setDeleteTarget(null)
+    }
     load(search)
   }
 

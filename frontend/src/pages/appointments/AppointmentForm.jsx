@@ -93,8 +93,8 @@ export default function AppointmentForm() {
     setError(null)
     try {
       const payload = {
-        patientId: Number(form.patientId),
-        doctorId: Number(form.doctorId),
+        patientId: form.patientId,
+        doctorId: form.doctorId,
         scheduledAt: new Date(form.scheduledAt).toISOString(),
         reason: form.reason || null,
         notes: form.notes || null,

@@ -8,30 +8,30 @@ using Microsoft.EntityFrameworkCore;
 namespace CmsApi.Controllers;
 
 [ApiController]
-[Route("api/appointments/{appointmentId}/vitals")]
+[Route("api/appointments/{appointmentId:guid}/vitals")]
 [Authorize]
 public class VitalsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<VitalsResponse>> Get(int appointmentId)
+    public async Task<ActionResult<VitalsResponse>> Get(Guid appointmentId)
     {
-        var vitals = await db.Vitals.FirstOrDefaultAsync(v => v.AppointmentId == appointmentId);
-        return vitals is null ? NotFound() : ToResponse(vitals);
+        var vitals = await db.Vitals.FirstOrDefaultAsync(v => v.Appointment.PublicId == appointmentId);
+        return vitals is null ? NotFound() : ToResponse(vitals, appointmentId);
     }
 
     [HttpPost]
     [Authorize(Roles = Roles.AdminDoctor)]
-    public async Task<ActionResult<VitalsResponse>> Create(int appointmentId, VitalsRequest req)
+    public async Task<ActionResult<VitalsResponse>> Create(Guid appointmentId, VitalsRequest req)
     {
-        if (!await db.Appointments.AnyAsync(a => a.Id == appointmentId))
-            return BadRequest("Appointment not found.");
+        var apptId = await db.Appointments.ResolveIdAsync(appointmentId);
+        if (apptId is null) return BadRequest("Appointment not found.");
 
-        if (await db.Vitals.AnyAsync(v => v.AppointmentId == appointmentId))
+        if (await db.Vitals.AnyAsync(v => v.AppointmentId == apptId))
             return Conflict("Vitals already recorded. Use PUT to update.");
 
         var vitals = new Vitals
         {
-            AppointmentId = appointmentId,
+            AppointmentId = apptId.Value,
             BloodPressureSystolic = req.BloodPressureSystolic,
             BloodPressureDiastolic = req.BloodPressureDiastolic,
             PulseRate = req.PulseRate,
@@ -44,14 +44,14 @@ public class VitalsController(AppDbContext db) : ControllerBase
 
         db.Vitals.Add(vitals);
         await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(Get), new { appointmentId }, ToResponse(vitals));
+        return CreatedAtAction(nameof(Get), new { appointmentId }, ToResponse(vitals, appointmentId));
     }
 
     [HttpPut]
     [Authorize(Roles = Roles.AdminDoctor)]
-    public async Task<ActionResult<VitalsResponse>> Update(int appointmentId, VitalsRequest req)
+    public async Task<ActionResult<VitalsResponse>> Update(Guid appointmentId, VitalsRequest req)
     {
-        var vitals = await db.Vitals.FirstOrDefaultAsync(v => v.AppointmentId == appointmentId);
+        var vitals = await db.Vitals.FirstOrDefaultAsync(v => v.Appointment.PublicId == appointmentId);
         if (vitals is null) return NotFound();
 
         vitals.BloodPressureSystolic = req.BloodPressureSystolic;
@@ -65,11 +65,11 @@ public class VitalsController(AppDbContext db) : ControllerBase
         vitals.RecordedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
-        return ToResponse(vitals);
+        return ToResponse(vitals, appointmentId);
     }
 
-    private static VitalsResponse ToResponse(Vitals v) => new(
-        v.Id, v.AppointmentId,
+    private static VitalsResponse ToResponse(Vitals v, Guid appointmentPublicId) => new(
+        v.PublicId, appointmentPublicId,
         v.BloodPressureSystolic, v.BloodPressureDiastolic,
         v.PulseRate, v.Temperature, v.WeightKg, v.HeightCm,
         v.OxygenSaturation, v.Notes, v.RecordedAt);

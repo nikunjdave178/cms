@@ -36,35 +36,37 @@ public class PatientsController(AppDbContext db) : ControllerBase
             .ToListAsync();
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<PatientResponse>> GetById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<PatientResponse>> GetById(Guid id)
     {
         var p = await db.Patients
             .Include(p => p.Gender)
             .Include(p => p.BloodGroup)
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefaultAsync(p => p.PublicId == id);
         return p is null ? NotFound() : ToResponse(p);
     }
 
     [HttpPost]
     public async Task<ActionResult<PatientResponse>> Create(PatientRequest req)
     {
+        if (await ValidateBusinessRules(req) is { } problem) return problem;
+
         var patient = new Patient
         {
-            FirstName = req.FirstName,
-            MiddleName = req.MiddleName,
-            LastName = req.LastName,
+            FirstName = req.FirstName.Trim(),
+            MiddleName = NullIfBlank(req.MiddleName),
+            LastName = req.LastName.Trim(),
             DateOfBirth = req.DateOfBirth,
             GenderId = req.GenderId,
             CountryCode = req.CountryCode,
             PhoneNumber = req.PhoneNumber,
-            Email = req.Email,
-            Address = req.Address,
-            City = req.City,
-            State = req.State,
-            Pincode = req.Pincode,
+            Email = NullIfBlank(req.Email),
+            Address = NullIfBlank(req.Address),
+            City = NullIfBlank(req.City),
+            State = NullIfBlank(req.State),
+            Pincode = NullIfBlank(req.Pincode),
             BloodGroupId = req.BloodGroupId,
-            Notes = req.Notes
+            Notes = NullIfBlank(req.Notes)
         };
 
         db.Patients.Add(patient);
@@ -74,32 +76,34 @@ public class PatientsController(AppDbContext db) : ControllerBase
             .Include(p => p.Gender)
             .Include(p => p.BloodGroup)
             .FirstAsync(p => p.Id == patient.Id);
-        return CreatedAtAction(nameof(GetById), new { id = patient.Id }, ToResponse(loaded));
+        return CreatedAtAction(nameof(GetById), new { id = loaded.PublicId }, ToResponse(loaded));
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<PatientResponse>> Update(int id, PatientRequest req)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<PatientResponse>> Update(Guid id, PatientRequest req)
     {
         var patient = await db.Patients
             .Include(p => p.Gender)
             .Include(p => p.BloodGroup)
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefaultAsync(p => p.PublicId == id);
         if (patient is null) return NotFound();
 
-        patient.FirstName = req.FirstName;
-        patient.MiddleName = req.MiddleName;
-        patient.LastName = req.LastName;
+        if (await ValidateBusinessRules(req) is { } problem) return problem;
+
+        patient.FirstName = req.FirstName.Trim();
+        patient.MiddleName = NullIfBlank(req.MiddleName);
+        patient.LastName = req.LastName.Trim();
         patient.DateOfBirth = req.DateOfBirth;
         patient.GenderId = req.GenderId;
         patient.CountryCode = req.CountryCode;
         patient.PhoneNumber = req.PhoneNumber;
-        patient.Email = req.Email;
-        patient.Address = req.Address;
-        patient.City = req.City;
-        patient.State = req.State;
-        patient.Pincode = req.Pincode;
+        patient.Email = NullIfBlank(req.Email);
+        patient.Address = NullIfBlank(req.Address);
+        patient.City = NullIfBlank(req.City);
+        patient.State = NullIfBlank(req.State);
+        patient.Pincode = NullIfBlank(req.Pincode);
         patient.BloodGroupId = req.BloodGroupId;
-        patient.Notes = req.Notes;
+        patient.Notes = NullIfBlank(req.Notes);
 
         await db.SaveChangesAsync();
 
@@ -110,10 +114,10 @@ public class PatientsController(AppDbContext db) : ControllerBase
         return ToResponse(patient);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
     {
-        var patient = await db.Patients.FindAsync(id);
+        var patient = await db.Patients.FirstOrDefaultAsync(p => p.PublicId == id);
         if (patient is null) return NotFound();
 
         db.Patients.Remove(patient);
@@ -121,8 +125,36 @@ public class PatientsController(AppDbContext db) : ControllerBase
         return NoContent();
     }
 
+    // Cross-field / referential rules that data annotations can't express.
+    private async Task<ActionResult?> ValidateBusinessRules(PatientRequest req)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (req.DateOfBirth > today)
+            ModelState.AddModelError(nameof(req.DateOfBirth), "Date of birth cannot be in the future.");
+        if (req.DateOfBirth.Year < 1900)
+            ModelState.AddModelError(nameof(req.DateOfBirth), "Date of birth year must be 1900 or later.");
+
+        var genderValid = await db.StaticValues.AnyAsync(v =>
+            v.Id == req.GenderId && v.IsActive && v.StaticType.Code == "GENDER");
+        if (!genderValid)
+            ModelState.AddModelError(nameof(req.GenderId), "Gender is not a valid option.");
+
+        if (req.BloodGroupId.HasValue)
+        {
+            var bgValid = await db.StaticValues.AnyAsync(v =>
+                v.Id == req.BloodGroupId && v.IsActive && v.StaticType.Code == "BLOOD_GROUP");
+            if (!bgValid)
+                ModelState.AddModelError(nameof(req.BloodGroupId), "Blood group is not a valid option.");
+        }
+
+        return ModelState.IsValid ? null : ValidationProblem(ModelState);
+    }
+
+    private static string? NullIfBlank(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
     private static PatientResponse ToResponse(Patient p) => new(
-        p.Id, p.FirstName, p.MiddleName, p.LastName, p.DateOfBirth,
+        p.PublicId, p.FirstName, p.MiddleName, p.LastName, p.DateOfBirth,
         p.GenderId, p.Gender.DisplayValue,
         p.CountryCode, p.PhoneNumber, p.Email,
         p.Address, p.City, p.State, p.Pincode,

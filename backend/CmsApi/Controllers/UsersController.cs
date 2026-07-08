@@ -19,10 +19,10 @@ public class UsersController(AppDbContext db) : ControllerBase
             .Select(u => ToResponse(u))
             .ToListAsync();
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<UserResponse>> GetById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<UserResponse>> GetById(Guid id)
     {
-        var u = await db.Users.FindAsync(id);
+        var u = await db.Users.FirstOrDefaultAsync(u => u.PublicId == id);
         return u is null ? NotFound() : ToResponse(u);
     }
 
@@ -45,16 +45,16 @@ public class UsersController(AppDbContext db) : ControllerBase
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = user.Id }, ToResponse(user));
+        return CreatedAtAction(nameof(GetById), new { id = user.PublicId }, ToResponse(user));
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<UserResponse>> Update(int id, UpdateUserRequest req)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<UserResponse>> Update(Guid id, UpdateUserRequest req)
     {
         if (!Roles.All.Contains(req.Role))
             return BadRequest("Invalid role.");
 
-        var user = await db.Users.FindAsync(id);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.PublicId == id);
         if (user is null) return NotFound();
 
         if (user is { Role: Roles.Admin, IsActive: true } && (req.Role != Roles.Admin || !req.IsActive)
@@ -71,10 +71,10 @@ public class UsersController(AppDbContext db) : ControllerBase
         return ToResponse(user);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
     {
-        var user = await db.Users.FindAsync(id);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.PublicId == id);
         if (user is null) return NotFound();
 
         if (user is { Role: Roles.Admin, IsActive: true }
@@ -87,5 +87,5 @@ public class UsersController(AppDbContext db) : ControllerBase
     }
 
     private static UserResponse ToResponse(User u) =>
-        new(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt);
+        new(u.PublicId, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt);
 }

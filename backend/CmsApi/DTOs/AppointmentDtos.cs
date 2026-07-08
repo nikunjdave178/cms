@@ -1,25 +1,27 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CmsApi.Dtos;
 
 public record AppointmentRequest(
-    int PatientId,
-    int DoctorId,
-    DateTime ScheduledAt,
-    string? Reason,
-    string? Notes
+    [Required] Guid PatientId,
+    [Required] Guid DoctorId,
+    [Required] DateTime ScheduledAt,
+    [MaxLength(255)] string? Reason,
+    [MaxLength(2000)] string? Notes
 );
 
 public record AppointmentUpdateRequest(
-    DateTime ScheduledAt,
-    int StatusId,
-    string? Reason,
-    string? Notes
+    [Required] DateTime ScheduledAt,
+    [Required] int StatusId,
+    [MaxLength(255)] string? Reason,
+    [MaxLength(2000)] string? Notes
 );
 
 public record AppointmentResponse(
-    int Id,
-    int PatientId,
+    Guid Id,
+    Guid PatientId,
     string PatientName,
-    int DoctorId,
+    Guid DoctorId,
     string DoctorName,
     string DoctorSpecialization,
     DateTime ScheduledAt,

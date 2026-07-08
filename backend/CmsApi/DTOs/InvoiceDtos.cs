@@ -1,13 +1,15 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CmsApi.Dtos;
 
 public record InvoiceItemRequest(
-    string Description,
-    int Quantity,
-    decimal UnitPrice
+    [Required(AllowEmptyStrings = false)] [MaxLength(255)] string Description,
+    [Range(1, 10000)] int Quantity,
+    [Range(0, 10000000)] decimal UnitPrice
 );
 
 public record InvoiceItemResponse(
-    int Id,
+    Guid Id,
     string Description,
     int Quantity,
     decimal UnitPrice,
@@ -15,26 +17,26 @@ public record InvoiceItemResponse(
 );
 
 public record InvoiceRequest(
-    int PatientId,
-    int? AppointmentId,
-    string? Description,
+    [Required] Guid PatientId,
+    Guid? AppointmentId,
+    [MaxLength(255)] string? Description,
     List<InvoiceItemRequest> Items,
-    decimal? GstRate,
+    [Range(0, 100)] decimal? GstRate,
     int? PaymentModeId,
-    string? PaymentReference
+    [MaxLength(100)] string? PaymentReference
 );
 
 public record InvoiceUpdateStatusRequest(
-    int StatusId,
+    [Required] int StatusId,
     int? PaymentModeId,
-    string? PaymentReference
+    [MaxLength(100)] string? PaymentReference
 );
 
 public record InvoiceResponse(
-    int Id,
-    int PatientId,
+    Guid Id,
+    Guid PatientId,
     string PatientName,
-    int? AppointmentId,
+    Guid? AppointmentId,
     string? Description,
     List<InvoiceItemResponse> Items,
     decimal SubtotalAmount,
