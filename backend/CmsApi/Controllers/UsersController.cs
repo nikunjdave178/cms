@@ -13,12 +13,17 @@ namespace CmsApi.Controllers;
 public class UsersController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PagedResponse<UserResponse>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<ActionResult<PagedResponse<UserResponse>>> GetAll(
+        [FromQuery] string? sort,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
 
-        var query = db.Users.OrderBy(u => u.FullName);
+        var desc = sort is { Length: > 0 } && sort[0] == '-';
+        var query = desc ? db.Users.OrderByDescending(u => u.FullName) : db.Users.OrderBy(u => u.FullName);
+
         var totalCount = await query.CountAsync();
         var items = await query
             .Skip((page - 1) * pageSize)
