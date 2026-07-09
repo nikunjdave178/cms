@@ -1,7 +1,7 @@
 import client from './client'
 
-export const getPatients = (search) =>
-  client.get('/patients', { params: { search } }).then(r => r.data)
+export const getPatients = (params) =>
+  client.get('/patients', { params }).then(r => r.data)
 
 export const getPatient = (id) =>
   client.get(`/patients/${id}`).then(r => r.data)
@@ -14,3 +14,8 @@ export const updatePatient = (id, data) =>
 
 export const deletePatient = (id) =>
   client.delete(`/patients/${id}`)
+
+export const exportPatients = (params, format) =>
+  client
+    .get('/patients/export', { params: { ...params, format }, responseType: 'blob' })
+    .then(r => r.data)

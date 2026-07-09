@@ -10,7 +10,7 @@ namespace CmsApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class BillingController(AppDbContext db, NumberSequenceService numberSequences) : ControllerBase
+public class BillingController(AppDbContext db, NumberSequenceService numberSequences, DeleteGuardService deleteGuard) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<InvoiceResponse>>> GetAll(
@@ -143,6 +143,9 @@ public class BillingController(AppDbContext db, NumberSequenceService numberSequ
     {
         var invoice = await db.Invoices.FirstOrDefaultAsync(i => i.PublicId == id);
         if (invoice is null) return NotFound();
+
+        if (await deleteGuard.FindBlockingReferenceAsync(invoice, $"Invoice {invoice.InvoiceNumber}") is { } reason)
+            return Conflict(reason);
 
         db.Invoices.Remove(invoice);
         await db.SaveChangesAsync();

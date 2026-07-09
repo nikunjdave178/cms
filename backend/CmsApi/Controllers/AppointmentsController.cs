@@ -10,7 +10,7 @@ namespace CmsApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AppointmentsController(AppDbContext db) : ControllerBase
+public class AppointmentsController(AppDbContext db, DeleteGuardService deleteGuard) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AppointmentResponse>>> GetAll(
@@ -121,6 +121,9 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
     {
         var appointment = await db.Appointments.FirstOrDefaultAsync(a => a.PublicId == id);
         if (appointment is null) return NotFound();
+
+        if (await deleteGuard.FindBlockingReferenceAsync(appointment, "This appointment") is { } reason)
+            return Conflict(reason);
 
         db.Appointments.Remove(appointment);
         await db.SaveChangesAsync();

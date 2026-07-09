@@ -10,7 +10,7 @@ namespace CmsApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class DoctorsController(AppDbContext db) : ControllerBase
+public class DoctorsController(AppDbContext db, DeleteGuardService deleteGuard) : ControllerBase
 {
     [HttpGet]
     public async Task<IEnumerable<DoctorResponse>> GetAll() =>
@@ -72,10 +72,17 @@ public class DoctorsController(AppDbContext db) : ControllerBase
         var doctor = await db.Doctors.FirstOrDefaultAsync(d => d.PublicId == id);
         if (doctor is null) return NotFound();
 
+        var label = $"Dr. {FullName(doctor.FirstName, doctor.MiddleName, doctor.LastName)}";
+        if (await deleteGuard.FindBlockingReferenceAsync(doctor, label) is { } reason)
+            return Conflict(reason);
+
         db.Doctors.Remove(doctor);
         await db.SaveChangesAsync();
         return NoContent();
     }
+
+    private static string FullName(string first, string? middle, string last) =>
+        string.IsNullOrWhiteSpace(middle) ? $"{first} {last}" : $"{first} {middle} {last}";
 
     private static DoctorResponse ToResponse(Doctor d) => new(
         d.PublicId, d.FirstName, d.MiddleName, d.LastName,
