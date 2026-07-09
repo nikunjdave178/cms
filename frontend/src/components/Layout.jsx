@@ -9,6 +9,7 @@ const titles = {
   '/doctors': 'Doctors',
   '/reports': 'Reports',
   '/users': 'Users',
+  '/settings': 'Auto Number Setup',
 }
 
 export default function Layout() {

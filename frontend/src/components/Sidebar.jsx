@@ -30,6 +30,10 @@ const links = [
     to: '/users', label: 'Users', roles: ['Admin'],
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   },
+  {
+    to: '/settings/numbering', label: 'Numbering', roles: ['Admin'],
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 8.25h13.5m-13.5 7.5h13.5m-9-15L7.5 19.5m6-16.5L10.5 19.5" />
+  },
 ]
 
 function Icon({ children }) {

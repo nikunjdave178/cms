@@ -10,7 +10,7 @@ namespace CmsApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PatientsController(AppDbContext db) : ControllerBase
+public class PatientsController(AppDbContext db, NumberSequenceService numberSequences) : ControllerBase
 {
     [HttpGet]
     public async Task<IEnumerable<PatientResponse>> GetAll([FromQuery] string? search)
@@ -24,6 +24,7 @@ public class PatientsController(AppDbContext db) : ControllerBase
         {
             var s = search.ToLower();
             query = query.Where(p =>
+                p.PatientNumber.ToLower().Contains(s) ||
                 p.FirstName.ToLower().Contains(s) ||
                 p.LastName.ToLower().Contains(s) ||
                 (p.MiddleName != null && p.MiddleName.ToLower().Contains(s)) ||
@@ -51,8 +52,11 @@ public class PatientsController(AppDbContext db) : ControllerBase
     {
         if (await ValidateBusinessRules(req) is { } problem) return problem;
 
+        var patientNumber = await numberSequences.GenerateNextAsync(NumberSequenceService.Patient);
+
         var patient = new Patient
         {
+            PatientNumber = patientNumber,
             FirstName = req.FirstName.Trim(),
             MiddleName = NullIfBlank(req.MiddleName),
             LastName = req.LastName.Trim(),
@@ -156,7 +160,7 @@ public class PatientsController(AppDbContext db) : ControllerBase
         string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     private static PatientResponse ToResponse(Patient p) => new(
-        p.PublicId, p.FirstName, p.MiddleName, p.LastName, p.DateOfBirth,
+        p.PublicId, p.PatientNumber, p.FirstName, p.MiddleName, p.LastName, p.DateOfBirth,
         p.GenderId, p.Gender.DisplayValue,
         p.CountryCode, p.PhoneNumber, p.Email,
         p.Address, p.City, p.State, p.Pincode, p.Country,

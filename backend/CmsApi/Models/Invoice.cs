@@ -4,6 +4,7 @@ public class Invoice
 {
     public int Id { get; set; }
     public Guid PublicId { get; set; }
+    public string InvoiceNumber { get; set; } = string.Empty;
     public int PatientId { get; set; }
     public Patient Patient { get; set; } = null!;
     public int? AppointmentId { get; set; }

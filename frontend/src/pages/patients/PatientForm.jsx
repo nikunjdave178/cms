@@ -94,21 +94,25 @@ export default function PatientForm() {
   const [error, setError] = useState(null)
   const [pinSuggestions, setPinSuggestions] = useState([])
   const pinDebounce = useRef(null)
+  const [patientNumber, setPatientNumber] = useState(null)
 
   useEffect(() => {
     if (!isEdit) return
     getPatient(id)
-      .then(p => setForm({
-        firstName: p.firstName, middleName: p.middleName ?? '',
-        lastName: p.lastName, dateOfBirth: p.dateOfBirth,
-        genderId: String(p.genderId),
-        countryCode: p.countryCode, phoneNumber: p.phoneNumber,
-        email: p.email ?? '', address: p.address ?? '',
-        city: p.city ?? '', state: p.state ?? '', pincode: p.pincode ?? '',
-        country: p.country ?? 'India',
-        bloodGroupId: p.bloodGroupId ? String(p.bloodGroupId) : '',
-        notes: p.notes ?? ''
-      }))
+      .then(p => {
+        setPatientNumber(p.patientNumber)
+        setForm({
+          firstName: p.firstName, middleName: p.middleName ?? '',
+          lastName: p.lastName, dateOfBirth: p.dateOfBirth,
+          genderId: String(p.genderId),
+          countryCode: p.countryCode, phoneNumber: p.phoneNumber,
+          email: p.email ?? '', address: p.address ?? '',
+          city: p.city ?? '', state: p.state ?? '', pincode: p.pincode ?? '',
+          country: p.country ?? 'India',
+          bloodGroupId: p.bloodGroupId ? String(p.bloodGroupId) : '',
+          notes: p.notes ?? ''
+        })
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [id, isEdit])
@@ -254,7 +258,12 @@ export default function PatientForm() {
 
   return (
     <div className="max-w-2xl">
-      <h3 className="text-lg font-semibold mb-6">{isEdit ? 'Edit Patient' : 'Register New Patient'}</h3>
+      <div className="flex items-baseline gap-3 mb-6">
+        <h3 className="text-lg font-semibold">{isEdit ? 'Edit Patient' : 'Register New Patient'}</h3>
+        {isEdit && patientNumber && (
+          <span className="font-mono text-sm text-gray-400">{patientNumber}</span>
+        )}
+      </div>
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
       <form onSubmit={handleSubmit} noValidate className="card space-y-5">
         {/* Name row */}

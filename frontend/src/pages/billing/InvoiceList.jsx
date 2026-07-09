@@ -7,17 +7,8 @@ import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
 import Select from '../../components/Select'
-
-const statusColors = {
-  Pending: 'badge bg-yellow-100 text-yellow-800',
-  Paid: 'badge bg-green-100 text-green-800',
-  Cancelled: 'badge bg-red-100 text-red-800',
-}
-
-const inr = (val) =>
-  '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
-const shortId = (id) => String(id).slice(0, 8).toUpperCase()
+import { inr } from '../../utils/format'
+import { badgeClass } from '../../constants/status'
 
 export default function InvoiceList() {
   const { hasRole } = useAuth()
@@ -71,8 +62,8 @@ export default function InvoiceList() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Total Billed', value: total, color: 'text-gray-800' },
-          { label: 'Collected', value: paid, color: 'text-green-600' },
-          { label: 'Pending', value: pending, color: 'text-yellow-600' },
+          { label: 'Collected', value: paid, color: 'text-success-600' },
+          { label: 'Pending', value: pending, color: 'text-warning-600' },
         ].map(({ label, value, color }) => (
           <div key={label} className="card">
             <p className="text-xs text-gray-500">{label}</p>
@@ -100,7 +91,7 @@ export default function InvoiceList() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {['#', 'Patient', 'Description', 'Subtotal', 'GST', 'Total', 'Status', 'Issued', ''].map(h => (
+                {['Invoice No.', 'Patient', 'Description', 'Subtotal', 'GST', 'Total', 'Status', 'Issued', ''].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
@@ -110,16 +101,16 @@ export default function InvoiceList() {
                 <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No invoices found.</td></tr>
               ) : invoices.map(i => (
                 <tr key={i.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-400 font-mono text-xs" title={i.id}>{shortId(i.id)}</td>
+                  <td className="px-4 py-3 text-gray-500 font-mono text-xs" title={i.id}>{i.invoiceNumber}</td>
                   <td className="px-4 py-3 font-medium">
-                    <Link to={`/patients/${i.patientId}`} className="text-indigo-600 hover:underline">{i.patientName}</Link>
+                    <Link to={`/patients/${i.patientId}`} className="text-primary-600 hover:underline">{i.patientName}</Link>
                   </td>
                   <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{i.description ?? '—'}</td>
                   <td className="px-4 py-3">{inr(i.subtotalAmount)}</td>
                   <td className="px-4 py-3 text-gray-500">{i.gstRate ? `${i.gstRate}%` : '—'}</td>
                   <td className="px-4 py-3 font-semibold">{inr(i.totalAmount)}</td>
                   <td className="px-4 py-3">
-                    <span className={statusColors[i.statusDisplay] ?? 'badge bg-gray-100 text-gray-700'}>{i.statusDisplay}</span>
+                    <span className={badgeClass(i.statusDisplay)}>{i.statusDisplay}</span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{format(new Date(i.issuedAt), 'd MMM yyyy')}</td>
                   <td className="px-4 py-3 text-right space-x-2">
@@ -141,7 +132,7 @@ export default function InvoiceList() {
       {markPaidTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-96 space-y-4">
-            <h3 className="font-semibold text-gray-800">Mark Invoice {shortId(markPaidTarget.id)} as Paid</h3>
+            <h3 className="font-semibold text-gray-800">Mark Invoice {markPaidTarget.invoiceNumber} as Paid</h3>
             <p className="text-sm text-gray-500">Total: {inr(markPaidTarget.totalAmount)}</p>
             <div>
               <label className="label">Payment Mode</label>

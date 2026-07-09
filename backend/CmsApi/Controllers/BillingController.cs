@@ -10,7 +10,7 @@ namespace CmsApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class BillingController(AppDbContext db) : ControllerBase
+public class BillingController(AppDbContext db, NumberSequenceService numberSequences) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<InvoiceResponse>>> GetAll(
@@ -73,8 +73,11 @@ public class BillingController(AppDbContext db) : ControllerBase
         var gstAmount = req.GstRate.HasValue ? Math.Round(subtotal * req.GstRate.Value / 100, 2) : 0m;
         var total = subtotal + gstAmount;
 
+        var invoiceNumber = await numberSequences.GenerateNextAsync(NumberSequenceService.Invoice);
+
         var invoice = new Invoice
         {
+            InvoiceNumber = invoiceNumber,
             PatientId = patientId.Value,
             AppointmentId = appointmentId,
             Description = req.Description,
@@ -166,6 +169,7 @@ public class BillingController(AppDbContext db) : ControllerBase
 
     private static InvoiceResponse ToResponse(Invoice i) => new(
         i.PublicId,
+        i.InvoiceNumber,
         i.Patient.PublicId,
         FullName(i.Patient.FirstName, i.Patient.MiddleName, i.Patient.LastName),
         i.Appointment?.PublicId,
