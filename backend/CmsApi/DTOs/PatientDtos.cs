@@ -53,6 +53,19 @@ public record PatientRequest(
     string? Notes
 );
 
+public record PatientListQuery(
+    string? Search,
+    int? GenderId,
+    int? BloodGroupId,
+    string? City,
+    string? State,
+    DateOnly? RegisteredFrom,
+    DateOnly? RegisteredTo,
+    string? Sort,
+    int Page = 1,
+    int PageSize = 20
+);
+
 public record PatientResponse(
     Guid Id,
     string PatientNumber,

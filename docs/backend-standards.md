@@ -168,6 +168,21 @@ Configure in `OnModelCreating`, don't rely on defaults:
   (`Restrict` for lookups, `Cascade`/`SetNull` where the domain wants it).
 - Hard delete is the current policy. If an entity needs history/undo, introduce
   soft delete (`IsDeleted` + a global query filter) rather than ad-hoc flags.
+- **Deleting a referenced entity is guarded by default.** Any FK left at
+  `Restrict` (the default posture for business-entity relationships — e.g.
+  Patient → Appointments, Patient → Invoices, Doctor → Appointments) is
+  automatically checked by `DeleteGuardService.FindBlockingReferenceAsync` before
+  the delete, returning a friendly message ("Patient Jane Doe cannot be deleted
+  as it has been used in appointments.") via `409 Conflict` instead of a raw
+  FK-violation. Every `Delete` action should call it:
+  ```csharp
+  if (await deleteGuard.FindBlockingReferenceAsync(patient, $"Patient {FullName(patient)}") is { } reason)
+      return Conflict(reason);
+  ```
+  To let a relationship cascade or null out instead of blocking, configure that
+  FK explicitly as `Cascade`/`SetNull` in `OnModelCreating` (see
+  Appointment → Vitals, Invoice → Appointment) — the guard only checks FKs left
+  at `Restrict`, so that's the opt-out.
 
 ---
 

@@ -57,6 +57,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey<Vitals>(v => v.AppointmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Patient → Appointments: Restrict, not the EF default Cascade, so a
+        // patient with appointment history can't be silently deleted along with
+        // it. DeleteGuardService turns this into a friendly message before the
+        // DB ever gets to enforce it. To let a future relationship cascade/null
+        // instead of block, configure that explicitly (see Vitals/Invoice above)
+        // — DeleteGuardService only guards FKs left at Restrict.
+        modelBuilder.Entity<Appointment>()
+            .HasOne(a => a.Patient)
+            .WithMany(p => p.Appointments)
+            .HasForeignKey(a => a.PatientId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Doctor → Appointments (guarded, see Patient → Appointments above)
+        modelBuilder.Entity<Appointment>()
+            .HasOne(a => a.Doctor)
+            .WithMany(d => d.Appointments)
+            .HasForeignKey(a => a.DoctorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Invoice → Status (StaticValue)
         modelBuilder.Entity<Invoice>()
             .HasOne(i => i.Status)
@@ -84,6 +103,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithOne(item => item.Invoice)
             .HasForeignKey(item => item.InvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Patient → Invoices (guarded, see Patient → Appointments above)
+        modelBuilder.Entity<Invoice>()
+            .HasOne(i => i.Patient)
+            .WithMany(p => p.Invoices)
+            .HasForeignKey(i => i.PatientId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // User → unique email
         modelBuilder.Entity<User>()

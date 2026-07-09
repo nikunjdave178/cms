@@ -15,12 +15,17 @@ client.interceptors.request.use(config => {
 
 client.interceptors.response.use(
   res => res,
-  err => {
+  async err => {
     if (err.response?.status === 401 && localStorage.getItem(AUTH_STORAGE_KEY)) {
       localStorage.removeItem(AUTH_STORAGE_KEY)
       window.dispatchEvent(new Event('cms:unauthorized'))
     }
-    const data = err.response?.data
+    let data = err.response?.data
+    // Blob-response requests (e.g. file export) get their error body back as a
+    // Blob too — unwrap JSON error bodies so the messages below still work.
+    if (data instanceof Blob && data.type?.includes('json')) {
+      data = JSON.parse(await data.text())
+    }
     // ASP.NET ValidationProblem: surface per-field errors so forms can highlight them.
     if (data?.errors && typeof data.errors === 'object') {
       const flat = Object.values(data.errors).flat().join(' ')
