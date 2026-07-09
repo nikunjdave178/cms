@@ -4,6 +4,7 @@ import { getUsers, deleteUser } from '../../api/users'
 import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
+import Pagination from '../../components/Pagination'
 
 const roleColors = {
   Admin: 'badge bg-indigo-100 text-indigo-800',
@@ -14,16 +15,21 @@ const roleColors = {
 export default function UserList() {
   const { user: currentUser } = useAuth()
   const [users, setUsers] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [error, setError] = useState(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   const load = () => {
     setLoading(true)
-    getUsers().then(setUsers).finally(() => setLoading(false))
+    getUsers({ page, pageSize })
+      .then(res => { setUsers(res.items); setTotalCount(res.totalCount) })
+      .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page, pageSize])
 
   const handleDelete = async () => {
     setError(null)
@@ -77,6 +83,13 @@ export default function UserList() {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={setPage}
+            onPageSizeChange={size => { setPageSize(size); setPage(1) }}
+          />
         </div>
       )}
 

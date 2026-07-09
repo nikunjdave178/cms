@@ -13,11 +13,21 @@ namespace CmsApi.Controllers;
 public class DoctorsController(AppDbContext db, DeleteGuardService deleteGuard) : ControllerBase
 {
     [HttpGet]
-    public async Task<IEnumerable<DoctorResponse>> GetAll() =>
-        await db.Doctors
-            .OrderBy(d => d.LastName)
+    public async Task<ActionResult<PagedResponse<DoctorResponse>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
+        var query = db.Doctors.OrderBy(d => d.LastName);
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(d => ToResponse(d))
             .ToListAsync();
+
+        return Ok(new PagedResponse<DoctorResponse>(items, page, pageSize, totalCount));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<DoctorResponse>> GetById(Guid id)

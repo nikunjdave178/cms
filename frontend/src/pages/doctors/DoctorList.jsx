@@ -4,6 +4,7 @@ import { getDoctors, deleteDoctor } from '../../api/doctors'
 import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
+import Pagination from '../../components/Pagination'
 
 const fullName = (d) =>
   [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ')
@@ -12,15 +13,20 @@ export default function DoctorList() {
   const { hasRole } = useAuth()
   const canEdit = hasRole('Admin')
   const [doctors, setDoctors] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   const load = () => {
     setLoading(true)
-    getDoctors().then(setDoctors).finally(() => setLoading(false))
+    getDoctors({ page, pageSize })
+      .then(res => { setDoctors(res.items); setTotalCount(res.totalCount) })
+      .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page, pageSize])
 
   const handleDelete = async () => {
     await deleteDoctor(deleteTarget.id)
@@ -65,6 +71,13 @@ export default function DoctorList() {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={setPage}
+            onPageSizeChange={size => { setPageSize(size); setPage(1) }}
+          />
         </div>
       )}
 

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getInvoices, updateInvoiceStatus, deleteInvoice } from '../../api/billing'
+import { getInvoices, updateInvoiceStatus, deleteInvoice, getBillingSummary } from '../../api/billing'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import { useAuth } from '../../context/AuthContext'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
 import Select from '../../components/Select'
+import Pagination from '../../components/Pagination'
 import { inr } from '../../utils/format'
 import { badgeClass } from '../../constants/status'
 
@@ -17,21 +18,31 @@ export default function InvoiceList() {
   const { values: paymentModes } = useStaticValues('PAYMENT_MODE')
 
   const [invoices, setInvoices] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [summary, setSummary] = useState({ totalBilled: 0, totalRevenue: 0, pendingAmount: 0 })
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
   const [markPaidTarget, setMarkPaidTarget] = useState(null)
   const [paymentModeId, setPaymentModeId] = useState('')
   const [paymentReference, setPaymentReference] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
-  const load = (statusId) => {
+  const load = () => {
     setLoading(true)
-    getInvoices(statusId ? { statusId } : {})
-      .then(setInvoices)
+    getInvoices({ statusId: statusFilter || undefined, page, pageSize })
+      .then(res => { setInvoices(res.items); setTotalCount(res.totalCount) })
       .finally(() => setLoading(false))
+    getBillingSummary().then(setSummary)
   }
 
-  useEffect(() => { load('') }, [])
+  useEffect(() => { load() }, [statusFilter, page, pageSize])
+
+  const handleStatusFilterChange = (v) => {
+    setStatusFilter(v)
+    setPage(1)
+  }
 
   const handleMarkPaid = async () => {
     const paidId = invoiceStatuses.find(s => s.code === 'PAID')?.id
@@ -44,18 +55,18 @@ export default function InvoiceList() {
     setMarkPaidTarget(null)
     setPaymentModeId('')
     setPaymentReference('')
-    load(statusFilter)
+    load()
   }
 
   const handleDelete = async () => {
     await deleteInvoice(deleteTarget.id)
     setDeleteTarget(null)
-    load(statusFilter)
+    load()
   }
 
-  const total = invoices.reduce((s, i) => s + Number(i.totalAmount), 0)
-  const paid = invoices.filter(i => i.statusDisplay === 'Paid').reduce((s, i) => s + Number(i.totalAmount), 0)
-  const pending = invoices.filter(i => i.statusDisplay === 'Pending').reduce((s, i) => s + Number(i.totalAmount), 0)
+  const total = summary.totalBilled
+  const paid = summary.totalRevenue
+  const pending = summary.pendingAmount
 
   return (
     <div className="space-y-4">
@@ -76,7 +87,7 @@ export default function InvoiceList() {
         <Select
           className="w-48"
           value={statusFilter}
-          onChange={v => { setStatusFilter(v); load(v) }}
+          onChange={handleStatusFilterChange}
           options={[
             { value: '', label: 'All Statuses' },
             ...invoiceStatuses.map(s => ({ value: String(s.id), label: s.displayValue })),
@@ -125,6 +136,13 @@ export default function InvoiceList() {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={setPage}
+            onPageSizeChange={size => { setPageSize(size); setPage(1) }}
+          />
         </div>
       )}
 
