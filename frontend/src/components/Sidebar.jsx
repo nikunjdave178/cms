@@ -45,8 +45,8 @@ export default function Sidebar() {
   const visibleLinks = links.filter(l => !l.roles || hasRole(...l.roles))
 
   return (
-    <aside className="w-60 min-h-screen bg-slate-900 text-white flex flex-col">
-      <div className="px-6 py-5 border-b border-slate-700/60">
+    <aside className="w-60 h-full shrink-0 bg-slate-900 text-white flex flex-col overflow-hidden">
+      <div className="shrink-0 px-6 py-5 border-b border-slate-700/60">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">C</div>
           <div>
@@ -56,7 +56,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-0.5">
         {visibleLinks.map(({ to, label, icon }) => (
           <NavLink
             key={to}
@@ -76,7 +76,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-6 py-4 border-t border-slate-700/60">
+      <div className="shrink-0 px-6 py-4 border-t border-slate-700/60">
         <p className="text-sm font-medium text-slate-200 truncate">{user?.fullName}</p>
         <p className="text-xs text-slate-500">{user?.role}</p>
         <button

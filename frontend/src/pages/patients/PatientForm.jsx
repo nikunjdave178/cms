@@ -6,6 +6,7 @@ import { useStaticValues } from '../../hooks/useStaticValues'
 import Spinner from '../../components/Spinner'
 import DatePicker from '../../components/DatePicker'
 import Select from '../../components/Select'
+import Combobox from '../../components/Combobox'
 import CountryCodeSelect from '../../components/CountryCodeSelect'
 import { PHONE_LENGTHS, COUNTRIES_INDIA_FIRST } from '../../data/countries'
 import { IN_STATES, IN_CITIES, CITY_PINCODES, lookupPincode, lookupCity } from '../../data/pincodes'
@@ -127,9 +128,9 @@ export default function PatientForm() {
 
   // Typing a zip autofills city + state: instant fill from the local factory
   // data, then the full data.gov.in directory on the server (authoritative)
-  // once enough digits are typed. Suggestions feed the datalist dropdown.
-  const setPincode = (e) => {
-    const pin = e.target.value.replace(/[^A-Za-z0-9 -]/g, '').slice(0, 10)
+  // once enough digits are typed. Suggestions feed the dropdown.
+  const setPincode = (val) => {
+    const pin = val.replace(/[^A-Za-z0-9 -]/g, '').slice(0, 10)
     setForm(f => {
       const found = f.country === 'India' ? lookupPincode(pin) : {}
       return {
@@ -163,20 +164,39 @@ export default function PatientForm() {
     }, 300)
   }
 
+  const pickPincode = (opt) => {
+    setForm(f => ({ ...f, pincode: opt.value, city: opt.city, state: opt.state }))
+    setPinSuggestions([])
+  }
+
   // Picking/typing a known city fills its state (and zip when empty).
-  const setCity = (e) => {
-    const city = e.target.value
+  const setCity = (val) => {
     setForm(f => {
-      const found = f.country === 'India' ? lookupCity(city) : null
+      const found = f.country === 'India' ? lookupCity(val) : null
       return {
         ...f,
-        city,
+        city: val,
         state: found ? found.state : f.state,
         pincode: found && !f.pincode ? found.pin : f.pincode,
       }
     })
     setErrors(errs => ({ ...errs, city: undefined }))
   }
+
+  const pickCity = (opt) => {
+    setForm(f => ({ ...f, city: opt.value, state: opt.state, pincode: opt.pin && !f.pincode ? opt.pin : f.pincode }))
+  }
+
+  const setState = (val) => {
+    setForm(f => ({ ...f, state: val }))
+    setErrors(errs => ({ ...errs, state: undefined }))
+  }
+
+  const pinOptions = (pinSuggestions.length > 0 ? pinSuggestions : CITY_PINCODES.map(e => ({ pincode: e.pin, city: e.city, state: e.state })))
+    .map(s => ({ value: s.pincode, label: s.pincode, sublabel: `${s.city}, ${s.state}`, city: s.city, state: s.state }))
+
+  const cityOptions = IN_CITIES.map(e => ({ value: e.city, label: e.city, sublabel: e.state, state: e.state, pin: e.pin }))
+  const stateOptions = IN_STATES.map(s => ({ value: s, label: s }))
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -347,59 +367,68 @@ export default function PatientForm() {
           </div>
           <div>
             <label className="label">Pincode / ZIP</label>
-            <input
-              className={inputCls('pincode')}
-              list={isIndia ? 'pincode-options' : undefined}
-              value={form.pincode}
-              onChange={setPincode}
-              maxLength={10}
-              placeholder={isIndia ? 'e.g. 400001' : 'ZIP / postal code'}
-              autoComplete="off"
-            />
-            {isIndia && (
-              <datalist id="pincode-options">
-                {pinSuggestions.length > 0
-                  ? pinSuggestions.map(s => (
-                      <option key={s.pincode} value={s.pincode}>{s.city}, {s.state}</option>
-                    ))
-                  : CITY_PINCODES.map(e => (
-                      <option key={e.pin} value={e.pin}>{e.city}, {e.state}</option>
-                    ))}
-              </datalist>
+            {isIndia ? (
+              <Combobox
+                value={form.pincode}
+                onChange={setPincode}
+                onSelect={pickPincode}
+                options={pinOptions}
+                maxLength={10}
+                error={Boolean(errors.pincode)}
+                placeholder="e.g. 400001"
+              />
+            ) : (
+              <input
+                className={inputCls('pincode')}
+                value={form.pincode}
+                onChange={e => setPincode(e.target.value)}
+                maxLength={10}
+                placeholder="ZIP / postal code"
+                autoComplete="off"
+              />
             )}
             <FieldError msg={errors.pincode} />
           </div>
           <div>
             <label className="label">City</label>
-            <input
-              className={inputCls('city')}
-              list={isIndia ? 'city-options' : undefined}
-              maxLength={100}
-              value={form.city}
-              onChange={setCity}
-              autoComplete="off"
-            />
-            {isIndia && (
-              <datalist id="city-options">
-                {IN_CITIES.map(e => <option key={e.city} value={e.city}>{e.state}</option>)}
-              </datalist>
+            {isIndia ? (
+              <Combobox
+                value={form.city}
+                onChange={setCity}
+                onSelect={pickCity}
+                options={cityOptions}
+                maxLength={100}
+                error={Boolean(errors.city)}
+              />
+            ) : (
+              <input
+                className={inputCls('city')}
+                maxLength={100}
+                value={form.city}
+                onChange={e => setCity(e.target.value)}
+                autoComplete="off"
+              />
             )}
             <FieldError msg={errors.city} />
           </div>
           <div>
             <label className="label">State</label>
-            <input
-              className={inputCls('state')}
-              list={isIndia ? 'state-options' : undefined}
-              maxLength={100}
-              value={form.state}
-              onChange={set('state')}
-              autoComplete="off"
-            />
-            {isIndia && (
-              <datalist id="state-options">
-                {IN_STATES.map(s => <option key={s} value={s} />)}
-              </datalist>
+            {isIndia ? (
+              <Combobox
+                value={form.state}
+                onChange={setState}
+                options={stateOptions}
+                maxLength={100}
+                error={Boolean(errors.state)}
+              />
+            ) : (
+              <input
+                className={inputCls('state')}
+                maxLength={100}
+                value={form.state}
+                onChange={set('state')}
+                autoComplete="off"
+              />
             )}
             <FieldError msg={errors.state} />
           </div>
