@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<PincodeEntry> PincodeDirectory => Set<PincodeEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,6 +88,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
             .IsUnique();
+
+        // Pincode directory (lookup data)
+        modelBuilder.Entity<PincodeEntry>(e =>
+        {
+            e.Property(p => p.Pincode).HasMaxLength(6);
+            e.Property(p => p.City).HasMaxLength(100);
+            e.Property(p => p.State).HasMaxLength(100);
+            e.HasIndex(p => p.Pincode).IsUnique();
+        });
 
         // Decimal precision
         modelBuilder.Entity<Invoice>().Property(i => i.SubtotalAmount).HasPrecision(18, 2);

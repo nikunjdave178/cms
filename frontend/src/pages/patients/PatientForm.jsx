@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getPatient, createPatient, updatePatient } from '../../api/patients'
+import { lookupPincodeApi, suggestPincodes } from '../../api/pincodes'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import Spinner from '../../components/Spinner'
 import DatePicker from '../../components/DatePicker'
@@ -90,6 +91,8 @@ export default function PatientForm() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [pinSuggestions, setPinSuggestions] = useState([])
+  const pinDebounce = useRef(null)
 
   useEffect(() => {
     if (!isEdit) return
@@ -122,7 +125,9 @@ export default function PatientForm() {
     set('phoneNumber')(e.target.value.replace(/\D/g, '').slice(0, maxLen))
   }
 
-  // Typing a zip autofills city + state from factory data (free text still allowed).
+  // Typing a zip autofills city + state: instant fill from the local factory
+  // data, then the full data.gov.in directory on the server (authoritative)
+  // once enough digits are typed. Suggestions feed the datalist dropdown.
   const setPincode = (e) => {
     const pin = e.target.value.replace(/[^A-Za-z0-9 -]/g, '').slice(0, 10)
     setForm(f => {
@@ -135,6 +140,27 @@ export default function PatientForm() {
       }
     })
     setErrors(errs => ({ ...errs, pincode: undefined, city: undefined, state: undefined }))
+
+    clearTimeout(pinDebounce.current)
+    if (form.country !== 'India' || !/^\d{2,6}$/.test(pin)) {
+      setPinSuggestions([])
+      return
+    }
+    pinDebounce.current = setTimeout(async () => {
+      try {
+        if (pin.length === 6) {
+          const exact = await lookupPincodeApi(pin)
+          setForm(f => f.pincode === pin
+            ? { ...f, city: exact.city, state: exact.state }
+            : f)
+          setPinSuggestions([exact])
+        } else {
+          setPinSuggestions(await suggestPincodes(pin))
+        }
+      } catch {
+        // offline or unknown PIN — the local factory fill above stands
+      }
+    }, 300)
   }
 
   // Picking/typing a known city fills its state (and zip when empty).
@@ -332,9 +358,13 @@ export default function PatientForm() {
             />
             {isIndia && (
               <datalist id="pincode-options">
-                {CITY_PINCODES.map(e => (
-                  <option key={e.pin} value={e.pin}>{e.city}, {e.state}</option>
-                ))}
+                {pinSuggestions.length > 0
+                  ? pinSuggestions.map(s => (
+                      <option key={s.pincode} value={s.pincode}>{s.city}, {s.state}</option>
+                    ))
+                  : CITY_PINCODES.map(e => (
+                      <option key={e.pin} value={e.pin}>{e.city}, {e.state}</option>
+                    ))}
               </datalist>
             )}
             <FieldError msg={errors.pincode} />

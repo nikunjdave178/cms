@@ -21,4 +21,8 @@
     <PackageReference Include="Scalar.AspNetCore" Version="2.6.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Data\Seed\pincodes.csv" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
