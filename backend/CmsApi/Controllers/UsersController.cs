@@ -13,11 +13,21 @@ namespace CmsApi.Controllers;
 public class UsersController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IEnumerable<UserResponse>> GetAll() =>
-        await db.Users
-            .OrderBy(u => u.FullName)
+    public async Task<ActionResult<PagedResponse<UserResponse>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
+        var query = db.Users.OrderBy(u => u.FullName);
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(u => ToResponse(u))
             .ToListAsync();
+
+        return Ok(new PagedResponse<UserResponse>(items, page, pageSize, totalCount));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<UserResponse>> GetById(Guid id)

@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
 import Select from '../../components/Select'
+import Pagination from '../../components/Pagination'
 
 const statusColors = {
   Scheduled: 'badge bg-indigo-100 text-indigo-700',
@@ -18,18 +19,26 @@ export default function AppointmentList() {
   const { values: statuses } = useStaticValues('APPOINTMENT_STATUS')
 
   const [appointments, setAppointments] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
-  const load = (statusId) => {
+  const load = () => {
     setLoading(true)
-    getAppointments(statusId ? { statusId } : {})
-      .then(setAppointments)
+    getAppointments({ statusId: statusFilter || undefined, page, pageSize })
+      .then(res => { setAppointments(res.items); setTotalCount(res.totalCount) })
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load('') }, [])
+  useEffect(() => { load() }, [statusFilter, page, pageSize])
+
+  const handleStatusFilterChange = (v) => {
+    setStatusFilter(v)
+    setPage(1)
+  }
 
   const handleStatusChange = async (appt, newStatusId) => {
     await updateAppointment(appt.id, {
@@ -38,13 +47,13 @@ export default function AppointmentList() {
       reason: appt.reason,
       notes: appt.notes,
     })
-    load(statusFilter)
+    load()
   }
 
   const handleDelete = async () => {
     await deleteAppointment(deleteTarget.id)
     setDeleteTarget(null)
-    load(statusFilter)
+    load()
   }
 
   return (
@@ -53,7 +62,7 @@ export default function AppointmentList() {
         <Select
           className="w-48"
           value={statusFilter}
-          onChange={v => { setStatusFilter(v); load(v) }}
+          onChange={handleStatusFilterChange}
           options={[
             { value: '', label: 'All Statuses' },
             ...statuses.map(s => ({ value: String(s.id), label: s.displayValue })),
@@ -105,6 +114,13 @@ export default function AppointmentList() {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={setPage}
+            onPageSizeChange={size => { setPageSize(size); setPage(1) }}
+          />
         </div>
       )}
 

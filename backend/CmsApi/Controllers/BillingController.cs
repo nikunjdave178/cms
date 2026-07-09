@@ -13,10 +13,15 @@ namespace CmsApi.Controllers;
 public class BillingController(AppDbContext db, NumberSequenceService numberSequences, DeleteGuardService deleteGuard) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<InvoiceResponse>>> GetAll(
+    public async Task<ActionResult<PagedResponse<InvoiceResponse>>> GetAll(
         [FromQuery] Guid? patientId,
-        [FromQuery] int? statusId)
+        [FromQuery] int? statusId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
         var query = db.Invoices
             .Include(i => i.Patient)
             .Include(i => i.Appointment)
@@ -28,15 +33,20 @@ public class BillingController(AppDbContext db, NumberSequenceService numberSequ
         if (patientId.HasValue)
         {
             var pid = await db.Patients.ResolveIdAsync(patientId.Value);
-            if (pid is null) return Ok(Array.Empty<InvoiceResponse>());
+            if (pid is null) return Ok(new PagedResponse<InvoiceResponse>([], page, pageSize, 0));
             query = query.Where(i => i.PatientId == pid);
         }
         if (statusId.HasValue) query = query.Where(i => i.StatusId == statusId);
 
-        return Ok(await query
+        var totalCount = await query.CountAsync();
+        var items = await query
             .OrderByDescending(i => i.IssuedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(i => ToResponse(i))
-            .ToListAsync());
+            .ToListAsync();
+
+        return Ok(new PagedResponse<InvoiceResponse>(items, page, pageSize, totalCount));
     }
 
     [HttpGet("{id:guid}")]
@@ -160,6 +170,7 @@ public class BillingController(AppDbContext db, NumberSequenceService numberSequ
         var invoices = await db.Invoices.ToListAsync();
         return new
         {
+            TotalBilled = invoices.Sum(i => i.TotalAmount),
             TotalRevenue = invoices.Where(i => i.StatusId == paidId).Sum(i => i.TotalAmount),
             PendingAmount = invoices.Where(i => i.StatusId == pendingId).Sum(i => i.TotalAmount),
             PaidCount = invoices.Count(i => i.StatusId == paidId),

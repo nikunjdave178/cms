@@ -13,12 +13,17 @@ namespace CmsApi.Controllers;
 public class AppointmentsController(AppDbContext db, DeleteGuardService deleteGuard) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AppointmentResponse>>> GetAll(
+    public async Task<ActionResult<PagedResponse<AppointmentResponse>>> GetAll(
         [FromQuery] Guid? patientId,
         [FromQuery] Guid? doctorId,
         [FromQuery] int? statusId,
-        [FromQuery] DateOnly? date)
+        [FromQuery] DateOnly? date,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
         var query = db.Appointments
             .Include(a => a.Patient)
             .Include(a => a.Doctor)
@@ -30,23 +35,28 @@ public class AppointmentsController(AppDbContext db, DeleteGuardService deleteGu
         if (patientId.HasValue)
         {
             var pid = await db.Patients.ResolveIdAsync(patientId.Value);
-            if (pid is null) return Ok(Array.Empty<AppointmentResponse>());
+            if (pid is null) return Ok(new PagedResponse<AppointmentResponse>([], page, pageSize, 0));
             query = query.Where(a => a.PatientId == pid);
         }
         if (doctorId.HasValue)
         {
             var did = await db.Doctors.ResolveIdAsync(doctorId.Value);
-            if (did is null) return Ok(Array.Empty<AppointmentResponse>());
+            if (did is null) return Ok(new PagedResponse<AppointmentResponse>([], page, pageSize, 0));
             query = query.Where(a => a.DoctorId == did);
         }
         if (statusId.HasValue) query = query.Where(a => a.StatusId == statusId);
         if (date.HasValue)
             query = query.Where(a => DateOnly.FromDateTime(a.ScheduledAt) == date.Value);
 
-        return Ok(await query
+        var totalCount = await query.CountAsync();
+        var items = await query
             .OrderByDescending(a => a.ScheduledAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(a => ToResponse(a))
-            .ToListAsync());
+            .ToListAsync();
+
+        return Ok(new PagedResponse<AppointmentResponse>(items, page, pageSize, totalCount));
     }
 
     [HttpGet("{id:guid}")]
