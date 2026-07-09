@@ -55,6 +55,7 @@ public record PatientRequest(
 
 public record PatientResponse(
     Guid Id,
+    string PatientNumber,
     string FirstName,
     string? MiddleName,
     string LastName,

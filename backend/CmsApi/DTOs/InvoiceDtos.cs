@@ -34,6 +34,7 @@ public record InvoiceUpdateStatusRequest(
 
 public record InvoiceResponse(
     Guid Id,
+    string InvoiceNumber,
     Guid PatientId,
     string PatientName,
     Guid? AppointmentId,

@@ -6,8 +6,8 @@ import { getInvoices } from '../../api/billing'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
-
-const fullName = (p) => [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')
+import { fullName } from '../../utils/format'
+import { badgeClass } from '../../constants/status'
 
 function Field({ label, value }) {
   return (
@@ -18,18 +18,6 @@ function Field({ label, value }) {
   )
 }
 
-const apptBadge = {
-  Scheduled: 'badge bg-indigo-100 text-indigo-700',
-  Completed: 'badge bg-emerald-100 text-emerald-700',
-  Cancelled: 'badge bg-red-100 text-red-700',
-  'No Show': 'badge bg-slate-100 text-slate-600',
-}
-
-const invBadge = {
-  Pending: 'badge bg-yellow-100 text-yellow-800',
-  Paid: 'badge bg-emerald-100 text-emerald-700',
-  Cancelled: 'badge bg-red-100 text-red-700',
-}
 
 export default function PatientDetail() {
   const { id } = useParams()
@@ -63,7 +51,7 @@ export default function PatientDetail() {
         <div>
           <h3 className="text-2xl font-bold">{fullName(patient)}</h3>
           <p className="text-gray-500 text-sm mt-1 font-mono" title={patient.id}>
-            Patient ID {String(patient.id).slice(0, 8).toUpperCase()}
+            {patient.patientNumber}
           </p>
         </div>
         <div className="flex gap-2">
@@ -109,7 +97,7 @@ export default function PatientDetail() {
                   <td className="py-2">{a.doctorName}</td>
                   <td className="py-2 text-gray-600">{format(new Date(a.scheduledAt), 'd MMM yyyy, h:mm a')}</td>
                   <td className="py-2">
-                    <span className={apptBadge[a.statusDisplay] ?? 'badge bg-gray-100 text-gray-600'}>{a.statusDisplay}</span>
+                    <span className={badgeClass(a.statusDisplay)}>{a.statusDisplay}</span>
                   </td>
                   <td className="py-2">
                     {a.hasVitals
@@ -154,7 +142,7 @@ export default function PatientDetail() {
                     ₹{Number(i.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="py-2">
-                    <span className={invBadge[i.statusDisplay] ?? 'badge bg-gray-100 text-gray-600'}>{i.statusDisplay}</span>
+                    <span className={badgeClass(i.statusDisplay)}>{i.statusDisplay}</span>
                   </td>
                   <td className="py-2 text-gray-600">{format(new Date(i.issuedAt), 'd MMM yyyy')}</td>
                 </tr>

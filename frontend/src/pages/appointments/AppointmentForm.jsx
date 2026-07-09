@@ -10,6 +10,7 @@ import { useStaticValues } from '../../hooks/useStaticValues'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import Select from '../../components/Select'
+import { fullName, doctorName } from '../../utils/format'
 
 const toLocalDateTimeInput = (iso) => format(new Date(iso), "yyyy-MM-dd'T'HH:mm")
 
@@ -154,7 +155,7 @@ export default function AppointmentForm() {
               placeholder="Select patient…"
               options={patients.map(p => ({
                 value: p.id,
-                label: [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' '),
+                label: `${p.patientNumber} — ${fullName(p)}`,
                 sublabel: `${p.countryCode} ${p.phoneNumber}`,
               }))}
             />
@@ -169,7 +170,7 @@ export default function AppointmentForm() {
               placeholder="Select doctor…"
               options={doctors.map(d => ({
                 value: d.id,
-                label: `Dr. ${[d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ')}`,
+                label: doctorName(d),
                 sublabel: d.specialization,
               }))}
             />

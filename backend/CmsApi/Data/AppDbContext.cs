@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<User> Users => Set<User>();
     public DbSet<PincodeEntry> PincodeDirectory => Set<PincodeEntry>();
+    public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -98,6 +99,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(p => p.Pincode).IsUnique();
         });
 
+        // Number sequences (auto-number setup: prefix/suffix/current value per entity type)
+        modelBuilder.Entity<NumberSequence>(e =>
+        {
+            e.Property(s => s.EntityType).HasMaxLength(30);
+            e.Property(s => s.DisplayName).HasMaxLength(100);
+            e.Property(s => s.Prefix).HasMaxLength(20);
+            e.Property(s => s.Suffix).HasMaxLength(20);
+            e.HasIndex(s => s.EntityType).IsUnique();
+        });
+
+        // Patient / Invoice auto-generated reference numbers
+        modelBuilder.Entity<Patient>(e =>
+        {
+            e.Property(p => p.PatientNumber).HasMaxLength(20);
+            e.HasIndex(p => p.PatientNumber).IsUnique();
+        });
+        modelBuilder.Entity<Invoice>(e =>
+        {
+            e.Property(i => i.InvoiceNumber).HasMaxLength(20);
+            e.HasIndex(i => i.InvoiceNumber).IsUnique();
+        });
+
         // Decimal precision
         modelBuilder.Entity<Invoice>().Property(i => i.SubtotalAmount).HasPrecision(18, 2);
         modelBuilder.Entity<Invoice>().Property(i => i.GstAmount).HasPrecision(18, 2);
@@ -151,6 +174,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new StaticValue { Id = 21, StaticTypeId = 5, Code = "CARD", DisplayValue = "Card", SortOrder = 3 },
             new StaticValue { Id = 22, StaticTypeId = 5, Code = "NET_BANKING", DisplayValue = "Net Banking", SortOrder = 4 },
             new StaticValue { Id = 23, StaticTypeId = 5, Code = "INSURANCE", DisplayValue = "Insurance", SortOrder = 5 }
+        );
+
+        // Seed number sequences (CurrentValue starts at 0; existing rows are
+        // backfilled and this synced to match in the AddNumberSequences migration)
+        modelBuilder.Entity<NumberSequence>().HasData(
+            new NumberSequence { Id = 1, EntityType = "PATIENT", DisplayName = "Patient Number", Prefix = "PAT-", Suffix = null, CurrentValue = 0, PaddingWidth = 4, UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new NumberSequence { Id = 2, EntityType = "INVOICE", DisplayName = "Invoice Number", Prefix = "INV-", Suffix = null, CurrentValue = 0, PaddingWidth = 5, UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
     }
 

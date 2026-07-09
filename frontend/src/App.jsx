@@ -15,6 +15,7 @@ import DoctorForm from './pages/doctors/DoctorForm'
 import Reports from './pages/Reports'
 import UserList from './pages/users/UserList'
 import UserForm from './pages/users/UserForm'
+import NumberSequenceList from './pages/settings/NumberSequenceList'
 
 export default function App() {
   return (
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="new" element={<UserForm />} />
                 <Route path=":id/edit" element={<UserForm />} />
               </Route>
+              <Route path="settings/numbering" element={<NumberSequenceList />} />
             </Route>
           </Route>
         </Route>

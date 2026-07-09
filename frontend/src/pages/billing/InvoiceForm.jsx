@@ -7,9 +7,7 @@ import { useStaticValues } from '../../hooks/useStaticValues'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import Select from '../../components/Select'
-
-const fullName = (p) => [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')
-const inr = (v) => '₹' + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+import { fullName, inr } from '../../utils/format'
 
 const emptyItem = () => ({ description: '', quantity: '1', unitPrice: '' })
 
@@ -107,7 +105,7 @@ export default function InvoiceForm() {
               placeholder="Select patient…"
               options={patients.map(p => ({
                 value: p.id,
-                label: fullName(p),
+                label: `${p.patientNumber} — ${fullName(p)}`,
                 sublabel: `${p.countryCode} ${p.phoneNumber}`,
               }))}
             />
