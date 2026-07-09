@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
 import Pagination from '../../components/Pagination'
+import SortableHeader from '../../components/SortableHeader'
 
 const roleColors = {
   Admin: 'badge bg-indigo-100 text-indigo-800',
@@ -19,17 +20,23 @@ export default function UserList() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [error, setError] = useState(null)
+  const [sort, setSort] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
 
   const load = () => {
     setLoading(true)
-    getUsers({ page, pageSize })
+    getUsers({ sort: sort || undefined, page, pageSize })
       .then(res => { setUsers(res.items); setTotalCount(res.totalCount) })
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [page, pageSize])
+  useEffect(() => { load() }, [sort, page, pageSize])
+
+  const handleSort = (field) => {
+    setSort(prev => (prev === field ? `-${field}` : field))
+    setPage(1)
+  }
 
   const handleDelete = async () => {
     setError(null)
@@ -55,7 +62,8 @@ export default function UserList() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {['Name', 'Email', 'Role', 'Status', ''].map(h => (
+                <SortableHeader field="name" label="Name" sort={sort} onSort={handleSort} />
+                {['Email', 'Role', 'Status', ''].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>

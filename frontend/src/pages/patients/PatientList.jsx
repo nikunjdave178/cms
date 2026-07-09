@@ -8,6 +8,7 @@ import ConfirmModal from '../../components/ConfirmModal'
 import Select from '../../components/Select'
 import DatePicker from '../../components/DatePicker'
 import Pagination from '../../components/Pagination'
+import SortableHeader from '../../components/SortableHeader'
 import { fullName } from '../../utils/format'
 
 const emptyFilters = { genderId: '', bloodGroupId: '', city: '', state: '', registeredFrom: '', registeredTo: '' }
@@ -23,23 +24,6 @@ const COLUMNS = [
   { field: 'bloodgroup', label: 'Blood Group' },
   { field: 'registered', label: 'Registered' },
 ]
-
-function SortHeader({ field, label, sort, onSort }) {
-  const active = sort === field || sort === `-${field}`
-  const desc = sort === `-${field}`
-  return (
-    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-      <button
-        type="button"
-        className="flex items-center gap-1 hover:text-gray-700"
-        onClick={() => onSort(field)}
-      >
-        {label}
-        {active && <span aria-hidden="true">{desc ? '▼' : '▲'}</span>}
-      </button>
-    </th>
-  )
-}
 
 export default function PatientList() {
   const [patients, setPatients] = useState([])
@@ -243,7 +227,7 @@ export default function PatientList() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   {COLUMNS.map(c => (
-                    <SortHeader key={c.field} field={c.field} label={c.label} sort={sort} onSort={handleSort} />
+                    <SortableHeader key={c.field} field={c.field} label={c.label} sort={sort} onSort={handleSort} />
                   ))}
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide" />
                 </tr>

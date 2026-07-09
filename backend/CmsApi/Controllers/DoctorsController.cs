@@ -13,12 +13,15 @@ namespace CmsApi.Controllers;
 public class DoctorsController(AppDbContext db, DeleteGuardService deleteGuard) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PagedResponse<DoctorResponse>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<ActionResult<PagedResponse<DoctorResponse>>> GetAll(
+        [FromQuery] string? sort,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
 
-        var query = db.Doctors.OrderBy(d => d.LastName);
+        var query = ApplySort(db.Doctors, sort);
         var totalCount = await query.CountAsync();
         var items = await query
             .Skip((page - 1) * pageSize)
@@ -27,6 +30,21 @@ public class DoctorsController(AppDbContext db, DeleteGuardService deleteGuard) 
             .ToListAsync();
 
         return Ok(new PagedResponse<DoctorResponse>(items, page, pageSize, totalCount));
+    }
+
+    // sort is `field` / `-field` (leading '-' = descending); unrecognized/absent falls back to last-name order.
+    private static IQueryable<Doctor> ApplySort(IQueryable<Doctor> query, string? sort)
+    {
+        var desc = sort is { Length: > 0 } && sort[0] == '-';
+        var field = (desc ? sort![1..] : sort ?? string.Empty).ToLowerInvariant();
+
+        return field switch
+        {
+            "name" => desc
+                ? query.OrderByDescending(d => d.FirstName).ThenByDescending(d => d.MiddleName).ThenByDescending(d => d.LastName)
+                : query.OrderBy(d => d.FirstName).ThenBy(d => d.MiddleName).ThenBy(d => d.LastName),
+            _ => query.OrderBy(d => d.LastName),
+        };
     }
 
     [HttpGet("{id:guid}")]
