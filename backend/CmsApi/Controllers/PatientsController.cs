@@ -155,13 +155,32 @@ public class PatientsController(AppDbContext db, NumberSequenceService numberSeq
 
         if (!string.IsNullOrWhiteSpace(q.Search))
         {
-            var s = q.Search.ToLower();
-            query = query.Where(p =>
-                p.PatientNumber.ToLower().Contains(s) ||
-                p.FirstName.ToLower().Contains(s) ||
-                p.LastName.ToLower().Contains(s) ||
-                (p.MiddleName != null && p.MiddleName.ToLower().Contains(s)) ||
-                p.PhoneNumber.Contains(s));
+            var tokens = q.Search.ToLower().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
+            if (tokens.Length <= 1)
+            {
+                var s = tokens.Length == 1 ? tokens[0] : string.Empty;
+                query = query.Where(p =>
+                    p.PatientNumber.ToLower().Contains(s) ||
+                    p.FirstName.ToLower().Contains(s) ||
+                    p.LastName.ToLower().Contains(s) ||
+                    (p.MiddleName != null && p.MiddleName.ToLower().Contains(s)) ||
+                    p.PhoneNumber.Contains(s));
+            }
+            else
+            {
+                // Multi-word query (e.g. "Krishna Sharma" or "Sharma Krishna"): match a
+                // full/partial name regardless of which name part each word belongs to,
+                // or the order the words were typed in — every word must appear
+                // somewhere across first/middle/last name, in any combination.
+                foreach (var token in tokens)
+                {
+                    query = query.Where(p =>
+                        p.FirstName.ToLower().Contains(token) ||
+                        p.LastName.ToLower().Contains(token) ||
+                        (p.MiddleName != null && p.MiddleName.ToLower().Contains(token)));
+                }
+            }
         }
 
         if (q.GenderId.HasValue) query = query.Where(p => p.GenderId == q.GenderId);
@@ -202,8 +221,8 @@ public class PatientsController(AppDbContext db, NumberSequenceService numberSeq
         {
             "patientnumber" => desc ? query.OrderByDescending(p => p.PatientNumber) : query.OrderBy(p => p.PatientNumber),
             "name" => desc
-                ? query.OrderByDescending(p => p.FirstName).ThenByDescending(p => p.LastName)
-                : query.OrderBy(p => p.FirstName).ThenBy(p => p.LastName),
+                ? query.OrderByDescending(p => p.FirstName).ThenByDescending(p => p.MiddleName).ThenByDescending(p => p.LastName)
+                : query.OrderBy(p => p.FirstName).ThenBy(p => p.MiddleName).ThenBy(p => p.LastName),
             "dob" => desc ? query.OrderByDescending(p => p.DateOfBirth) : query.OrderBy(p => p.DateOfBirth),
             "gender" => desc ? query.OrderByDescending(p => p.Gender.DisplayValue) : query.OrderBy(p => p.Gender.DisplayValue),
             "mobile" => desc ? query.OrderByDescending(p => p.PhoneNumber) : query.OrderBy(p => p.PhoneNumber),
