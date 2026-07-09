@@ -1,5 +1,8 @@
 # Clinic Management System — Setup Guide
 
+> **Contributing?** Read the engineering standards in [docs/](./docs/README.md)
+> before adding features — they keep the codebase consistent as it grows.
+
 ## Prerequisites
 
 Install these before running the project:
