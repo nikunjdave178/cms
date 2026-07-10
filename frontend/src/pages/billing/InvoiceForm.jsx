@@ -35,13 +35,13 @@ export default function InvoiceForm() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    getPatients().then(setPatients).finally(() => setLoading(false))
+    getPatients({ pageSize: 100 }).then(res => setPatients(res.items)).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     if (!form.patientId) { setAppointments([]); return }
-    getAppointments({ patientId: form.patientId })
-      .then(setAppointments)
+    getAppointments({ patientId: form.patientId, pageSize: 100 })
+      .then(res => setAppointments(res.items))
       .catch(() => setAppointments([]))
   }, [form.patientId])
 

@@ -45,12 +45,12 @@ export default function AppointmentForm() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const promises = [getPatients(), getDoctors()]
+    const promises = [getPatients({ pageSize: 100 }), getDoctors({ pageSize: 100 })]
     if (isEdit) promises.push(getAppointment(id))
 
     Promise.all(promises).then(([pts, docs, appt]) => {
-      setPatients(pts)
-      setDoctors(docs)
+      setPatients(pts.items)
+      setDoctors(docs.items)
       if (appt) {
         setForm({
           patientId: String(appt.patientId),

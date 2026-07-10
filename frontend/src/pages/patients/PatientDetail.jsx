@@ -29,8 +29,8 @@ export default function PatientDetail() {
   const [showDelete, setShowDelete] = useState(false)
 
   useEffect(() => {
-    Promise.all([getPatient(id), getAppointments({ patientId: id }), getInvoices({ patientId: id })])
-      .then(([p, a, inv]) => { setPatient(p); setAppointments(a); setInvoices(inv) })
+    Promise.all([getPatient(id), getAppointments({ patientId: id, pageSize: 100 }), getInvoices({ patientId: id, pageSize: 100 })])
+      .then(([p, a, inv]) => { setPatient(p); setAppointments(a.items); setInvoices(inv.items) })
       .finally(() => setLoading(false))
   }, [id])
 
