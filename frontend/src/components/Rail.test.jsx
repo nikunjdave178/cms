@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Rail from './Rail'
 import { LayoutProvider } from '../context/LayoutContext'
+import { UnsavedChangesProvider } from '../context/UnsavedChangesContext'
 
 let mockHasRole = () => true
 
@@ -20,7 +21,9 @@ function renderRail() {
   return render(
     <MemoryRouter>
       <LayoutProvider>
-        <Rail />
+        <UnsavedChangesProvider>
+          <Rail />
+        </UnsavedChangesProvider>
       </LayoutProvider>
     </MemoryRouter>
   )

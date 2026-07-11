@@ -255,7 +255,7 @@ export default function PatientList() {
                       {format(new Date(p.createdAt), 'd MMM yyyy')}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link to={`/app/patients/${p.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
+                      <Link to={`/app/patients/${p.id}?edit=true`} className="btn-secondary text-xs mr-2">Edit</Link>
                       <button className="btn-danger text-xs" onClick={() => setDeleteTarget(p)}>Delete</button>
                     </td>
                   </tr>

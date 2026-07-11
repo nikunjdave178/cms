@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Menu as MenuIcon } from 'lucide-react'
 import { useLayout } from '../context/LayoutContext'
+import { useUnsavedChanges } from '../context/UnsavedChangesContext'
 import { QUICK_ACCESS_ITEMS } from '../constants/nav'
 import MenuFlyout from './MenuFlyout'
 
@@ -24,13 +25,31 @@ function RailButton({ icon: Icon, label, showLabel }) {
   )
 }
 
+// Intercepts the NavLink click instead of letting it navigate natively, so an
+// unsaved-changes prompt (see context/UnsavedChangesContext.jsx) can block it.
+// Re-clicking the already-active route skips the guard — it's a resync, not a
+// navigation away from anything.
 function RailLink({ to, end, icon: Icon, label, showLabel, onClick, forceInactive }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { runGuarded } = useUnsavedChanges()
+
+  const handleClick = (e) => {
+    e.preventDefault()
+    onClick?.()
+    if (to === location.pathname) {
+      navigate(to)
+      return
+    }
+    runGuarded(() => navigate(to))
+  }
+
   return (
     <NavLink
       to={to}
       end={end}
       title={showLabel ? undefined : label}
-      onClick={onClick}
+      onClick={handleClick}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
           isActive && !forceInactive ? 'bg-primary-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'

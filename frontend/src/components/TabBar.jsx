@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLayout } from '../context/LayoutContext'
+import { useUnsavedChanges } from '../context/UnsavedChangesContext'
 import { matchNavItem, MAIN_PATH } from '../constants/nav'
 import UserMenu from './UserMenu'
 import TabContextMenu from './TabContextMenu'
@@ -23,6 +24,7 @@ export default function TabBar() {
     closeAllTabs,
     setActiveTab,
   } = useLayout()
+  const { runGuarded } = useUnsavedChanges()
 
   const measureRef = useRef(null)
   const scrollRef = useRef(null)
@@ -110,10 +112,20 @@ export default function TabBar() {
   // newActive is null once no tabs remain — route to the blank landing page
   // instead of leaving the URL stuck on a just-closed tab's route (which would
   // silently reopen it on a refresh).
+  //
+  // Only the active tab can be carrying unsaved changes, so closing a
+  // background tab never needs guarding — closing the active one does, since
+  // it both removes the tab AND navigates away from whatever was showing.
   const closeTabAndNavigate = (path) => {
     const wasActive = path === activeTabPath
-    const newActive = closeTab(path)
-    if (wasActive) navigate(newActive ?? MAIN_PATH)
+    if (!wasActive) {
+      closeTab(path)
+      return
+    }
+    runGuarded(() => {
+      const newActive = closeTab(path)
+      navigate(newActive ?? MAIN_PATH)
+    })
   }
 
   const handleClose = (e, path) => {
@@ -128,6 +140,22 @@ export default function TabBar() {
 
   const closeContextMenu = () => setContextMenu(null)
 
+  // Whether the currently active tab survives a given bulk-close action,
+  // computed from the current tab list *before* performing it — only guard
+  // when the active (possibly dirty) tab would actually be removed. Without
+  // this, e.g. right-clicking the active dirty tab and choosing "Close Others"
+  // (which keeps it open) would prompt for nothing lost.
+  const activeTabSurvives = (action, clickedPath) => {
+    if (action === 'close-all') return false
+    if (action === 'close-others') return clickedPath === activeTabPath
+    if (action === 'close-right') {
+      const clickedIdx = tabs.findIndex((t) => t.path === clickedPath)
+      const activeIdx = tabs.findIndex((t) => t.path === activeTabPath)
+      return activeIdx !== -1 && activeIdx <= clickedIdx
+    }
+    return true
+  }
+
   const runContextMenuAction = (action) => {
     if (!contextMenu) return
     const { path } = contextMenu
@@ -137,9 +165,15 @@ export default function TabBar() {
       closeTabAndNavigate(path)
       return
     }
-    const newActive =
-      action === 'close-others' ? closeOtherTabs(path) : action === 'close-right' ? closeTabsToTheRight(path) : closeAllTabs()
-    navigate(newActive ?? MAIN_PATH)
+
+    const performAction = () => {
+      const newActive =
+        action === 'close-others' ? closeOtherTabs(path) : action === 'close-right' ? closeTabsToTheRight(path) : closeAllTabs()
+      navigate(newActive ?? MAIN_PATH)
+    }
+
+    if (activeTabSurvives(action, path)) performAction()
+    else runGuarded(performAction)
   }
 
   return (
@@ -166,7 +200,13 @@ export default function TabBar() {
               <button
                 key={tab.path}
                 ref={(el) => (tabRefs.current[tab.path] = el)}
-                onClick={() => navigate(tab.path)}
+                onClick={() => {
+                  if (tab.path === activeTabPath) {
+                    navigate(tab.path)
+                    return
+                  }
+                  runGuarded(() => navigate(tab.path))
+                }}
                 onContextMenu={(e) => openContextMenu(e, tab.path)}
                 className={`shrink-0 snap-start w-40 flex items-center justify-between gap-2 pl-4 pr-2 py-2.5 text-sm font-medium border-r border-gray-200 transition-colors ${
                   isActive ? 'bg-gray-50 text-primary-700 border-b-2 border-b-primary-600' : 'text-gray-600 hover:bg-gray-50'

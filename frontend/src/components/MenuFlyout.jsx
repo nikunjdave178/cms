@@ -1,6 +1,7 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLayout } from '../context/LayoutContext'
+import { useUnsavedChanges } from '../context/UnsavedChangesContext'
 import { NAV_GROUPS } from '../constants/nav'
 
 // Attached to the rail's right edge, opened on hover (see Rail.jsx) — not a
@@ -9,6 +10,23 @@ import { NAV_GROUPS } from '../constants/nav'
 export default function MenuFlyout({ left, onNavigate }) {
   const { hasRole } = useAuth()
   const { activeTabPath } = useLayout()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { runGuarded } = useUnsavedChanges()
+
+  // Intercepts the NavLink click instead of letting it navigate natively, so an
+  // unsaved-changes prompt (see context/UnsavedChangesContext.jsx) can block it.
+  // Re-clicking the already-active route skips the guard — it's a resync, not a
+  // navigation away from anything.
+  const handleItemClick = (path) => (e) => {
+    e.preventDefault()
+    onNavigate?.()
+    if (path === location.pathname) {
+      navigate(path)
+      return
+    }
+    runGuarded(() => navigate(path))
+  }
 
   const visibleGroups = NAV_GROUPS
     .filter((g) => !g.roles || hasRole(...g.roles))
@@ -30,7 +48,7 @@ export default function MenuFlyout({ left, onNavigate }) {
                 key={item.path}
                 to={item.path}
                 end={item.end}
-                onClick={onNavigate}
+                onClick={handleItemClick(item.path)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive && activeTabPath ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'

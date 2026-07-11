@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom'
 import TabBar from './TabBar'
 import { LayoutProvider, useLayout } from '../context/LayoutContext'
+import { UnsavedChangesProvider } from '../context/UnsavedChangesContext'
 import { MAIN_PATH, DASHBOARD_PATH } from '../constants/nav'
 
 vi.mock('../context/AuthContext', () => ({
@@ -13,7 +14,9 @@ function renderTabBar(initialPath = DASHBOARD_PATH) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <LayoutProvider>
-        <TabBar />
+        <UnsavedChangesProvider>
+          <TabBar />
+        </UnsavedChangesProvider>
       </LayoutProvider>
     </MemoryRouter>
   )
@@ -31,8 +34,10 @@ function renderTabBarWithRenavigate(initialPath = DASHBOARD_PATH) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <LayoutProvider>
-        <TabBar />
-        <RenavigateToSamePath />
+        <UnsavedChangesProvider>
+          <TabBar />
+          <RenavigateToSamePath />
+        </UnsavedChangesProvider>
       </LayoutProvider>
     </MemoryRouter>
   )
@@ -63,8 +68,10 @@ function renderTabBarWithNavigation(initialPath = DASHBOARD_PATH) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <LayoutProvider>
-        <TabBar />
-        <NavigateButtons />
+        <UnsavedChangesProvider>
+          <TabBar />
+          <NavigateButtons />
+        </UnsavedChangesProvider>
       </LayoutProvider>
     </MemoryRouter>
   )
@@ -126,9 +133,11 @@ describe('TabBar', () => {
       render(
         <MemoryRouter initialEntries={[DASHBOARD_PATH]}>
           <LayoutProvider>
-            <TabBar />
-            <CloseTabWithoutNavigating path={DASHBOARD_PATH} />
-            <RenavigateToSamePath />
+            <UnsavedChangesProvider>
+              <TabBar />
+              <CloseTabWithoutNavigating path={DASHBOARD_PATH} />
+              <RenavigateToSamePath />
+            </UnsavedChangesProvider>
           </LayoutProvider>
         </MemoryRouter>
       )

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import Layout from './Layout'
 import { LayoutProvider } from '../context/LayoutContext'
+import { UnsavedChangesProvider } from '../context/UnsavedChangesContext'
 import { DASHBOARD_PATH, MAIN_PATH } from '../constants/nav'
 
 vi.mock('../context/AuthContext', () => ({
@@ -21,13 +22,15 @@ function renderApp(initialPath = DASHBOARD_PATH) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <LayoutProvider>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path={MAIN_PATH} />
-            <Route path={DASHBOARD_PATH} element={<div>Dashboard Page Content</div>} />
-            <Route path="/app/patients" element={<div>Patients Page Content</div>} />
-          </Route>
-        </Routes>
+        <UnsavedChangesProvider>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path={MAIN_PATH} />
+              <Route path={DASHBOARD_PATH} element={<div>Dashboard Page Content</div>} />
+              <Route path="/app/patients" element={<div>Patients Page Content</div>} />
+            </Route>
+          </Routes>
+        </UnsavedChangesProvider>
       </LayoutProvider>
     </MemoryRouter>
   )

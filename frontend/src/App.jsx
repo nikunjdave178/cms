@@ -36,7 +36,6 @@ export default function App() {
                 <Route index element={<PatientList />} />
                 <Route path="new" element={<PatientForm />} />
                 <Route path=":id" element={<PatientDetail />} />
-                <Route path=":id/edit" element={<PatientForm />} />
               </Route>
 
               <Route path="appointments">
