@@ -5,15 +5,37 @@ import { useLayout } from '../context/LayoutContext'
 import { matchNavItem, MAIN_PATH } from '../constants/nav'
 import UserMenu from './UserMenu'
 
+// Must match the tab button's width class (w-40 = 10rem) below — kept as a
+// constant so chevron clicks can step by whole tabs, never a partial one.
+const TAB_WIDTH_PX = 160
+
 export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { tabs, activeTabPath, openOrActivateTab, closeTab, setActiveTab } = useLayout()
 
+  const measureRef = useRef(null)
   const scrollRef = useRef(null)
   const tabRefs = useRef({})
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
+  const [stripWidth, setStripWidth] = useState(0)
+
+  // The visible tab strip's width must itself be an exact multiple of
+  // TAB_WIDTH_PX — otherwise, whatever's left over after fitting N whole tabs
+  // shows as a sliver of the next one. Measuring the naturally-flexed wrapper
+  // (rather than the scroll strip itself) avoids a feedback loop: the strip's
+  // own width is what we're setting, so it can't also be what we measure.
+  useEffect(() => {
+    const el = measureRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      const available = entry.contentRect.width
+      setStripWidth(Math.floor(available / TAB_WIDTH_PX) * TAB_WIDTH_PX)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   // Opens/activates a tab for every navigation, regardless of source (rail, menu modal,
   // in-page links, redirects, back/forward, direct URL) — the router already produces
@@ -53,7 +75,26 @@ export default function TabBar() {
     tabRefs.current[activeTabPath]?.scrollIntoView({ inline: 'nearest', behavior: 'smooth' })
   }, [activeTabPath])
 
-  const scrollBy = (delta) => scrollRef.current?.scrollBy({ left: delta, behavior: 'smooth' })
+  // Steps by however many whole tabs fit in the visible strip (at least one),
+  // so a chevron click always lands on a tab boundary — never a partial tab.
+  // Combined with scroll-snap on the strip/tabs below, this also keeps trackpad
+  // and shift+wheel scrolling snapped to whole tabs, not just chevron clicks.
+  //
+  // The target is clamped to the *last tab-aligned* position, not the raw
+  // scrollWidth - clientWidth max: when the total tab width isn't an exact
+  // multiple of the visible width (the common case), that raw max falls
+  // mid-tab, and the browser scroll-clamps there regardless of scroll-snap —
+  // which would cut the leftmost visible tab off at the far-right end. Landing
+  // one boundary short and leaving a little empty space instead is preferable
+  // to ever slicing a tab.
+  const scrollByTabs = (direction) => {
+    const el = scrollRef.current
+    if (!el) return
+    const tabsPerPage = Math.max(1, Math.floor(el.clientWidth / TAB_WIDTH_PX))
+    const maxAligned = Math.max(0, Math.floor((el.scrollWidth - el.clientWidth) / TAB_WIDTH_PX) * TAB_WIDTH_PX)
+    const target = el.scrollLeft + direction * tabsPerPage * TAB_WIDTH_PX
+    el.scrollTo({ left: Math.min(Math.max(target, 0), maxAligned), behavior: 'smooth' })
+  }
 
   const handleClose = (e, path) => {
     e.stopPropagation()
@@ -69,48 +110,51 @@ export default function TabBar() {
     <div data-testid="tab-bar" className="shrink-0 min-h-[3.25rem] bg-white border-b border-gray-200 flex items-stretch">
       {canScrollLeft && (
         <button
-          onClick={() => scrollBy(-200)}
+          onClick={() => scrollByTabs(-1)}
           className="shrink-0 flex items-center px-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50"
         >
           <ChevronLeft className="h-4 w-4" strokeWidth={1.8} />
         </button>
       )}
 
-      <div
-        ref={scrollRef}
-        onScroll={updateScrollState}
-        className="flex-1 min-w-0 flex items-stretch overflow-x-auto scrollbar-none"
-      >
-        {tabs.map((tab) => {
-          const isActive = tab.path === activeTabPath
-          return (
-            <button
-              key={tab.path}
-              ref={(el) => (tabRefs.current[tab.path] = el)}
-              onClick={() => navigate(tab.path)}
-              className={`shrink-0 w-40 flex items-center justify-between gap-2 pl-4 pr-2 py-2.5 text-sm font-medium border-r border-gray-200 transition-colors ${
-                isActive ? 'bg-gray-50 text-primary-700 border-b-2 border-b-primary-600' : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <span className="min-w-0 flex-1 truncate text-left">{tab.title}</span>
-              <span
-                role="button"
-                tabIndex={-1}
-                aria-label={`Close ${tab.title} tab`}
-                data-testid="tab-close"
-                onClick={(e) => handleClose(e, tab.path)}
-                className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+      <div ref={measureRef} className="flex-1 min-w-0 overflow-hidden flex items-stretch">
+        <div
+          ref={scrollRef}
+          onScroll={updateScrollState}
+          style={{ width: stripWidth ? `${stripWidth}px` : '100%' }}
+          className="flex items-stretch overflow-x-auto scrollbar-none snap-x snap-mandatory"
+        >
+          {tabs.map((tab) => {
+            const isActive = tab.path === activeTabPath
+            return (
+              <button
+                key={tab.path}
+                ref={(el) => (tabRefs.current[tab.path] = el)}
+                onClick={() => navigate(tab.path)}
+                className={`shrink-0 snap-start w-40 flex items-center justify-between gap-2 pl-4 pr-2 py-2.5 text-sm font-medium border-r border-gray-200 transition-colors ${
+                  isActive ? 'bg-gray-50 text-primary-700 border-b-2 border-b-primary-600' : 'text-gray-600 hover:bg-gray-50'
+                }`}
               >
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
-              </span>
-            </button>
-          )
-        })}
+                <span className="min-w-0 flex-1 truncate text-left">{tab.title}</span>
+                <span
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={`Close ${tab.title} tab`}
+                  data-testid="tab-close"
+                  onClick={(e) => handleClose(e, tab.path)}
+                  className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2} />
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {canScrollRight && (
         <button
-          onClick={() => scrollBy(200)}
+          onClick={() => scrollByTabs(1)}
           className="shrink-0 flex items-center px-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50"
         >
           <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
