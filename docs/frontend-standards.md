@@ -56,7 +56,6 @@ them instead of raw HTML controls** so every screen looks and behaves the same.
 | `Spinner` | Loading state | `className` |
 | `Modal` | Generic modal shell (portal, escape/backdrop close, scroll lock) | `onClose, title?, size` |
 | `ConfirmModal` | Destructive confirmation, built on `Modal` | `message, onConfirm, onCancel` |
-| `MenuModal` | Full grouped/role-filtered nav listing, built on `Modal`, driven by `constants/nav.js` | `onClose` |
 
 **`onChange` contract:** primitives call `onChange(value)` with the raw value,
 not a DOM event. Form `set()` handlers accept either (`e?.target ? e.target.value : e`).
@@ -67,10 +66,15 @@ Missing primitives to add when first needed (keep them here, not per-page):
 
 ### 2. Layout (`components/`)
 
-`Layout` (app shell: fixed-height flex row, scrolls `<main>` only), `Rail` (icon
-rail — menu trigger opening `MenuModal`, fixed quick-access shortcuts from
-`constants/nav.js`, expand/collapse/hide states persisted via `LayoutContext`, user
-footer), `TabBar` (top tab strip — one tab per visited URL; also owns the
+`Layout` (app shell: fixed-height flex row, scrolls `<main>` only), `Rail` + its
+`MenuFlyout` (icon rail — fixed quick-access shortcuts from `constants/nav.js`.
+Always docked at a fixed icon-only width; hovering peeks it open to full width with
+labels via local component state, closing on mouse-out — no persisted open/closed
+preference, no manual pin or hide control. Hovering the "Menu" row specifically
+opens `MenuFlyout`, a grouped/role-filtered listing of every nav destination
+attached flush to the rail's current right edge — no click, no backdrop, no portal;
+it's positioned `absolute` alongside the rail and closes when the mouse leaves.
+User footer at the bottom), `TabBar` (top tab strip — one tab per visited URL; also owns the
 `useLocation` watcher that opens/activates a tab on every navigation). The shell is
 `h-screen overflow-hidden`; only the content area scrolls — never the rail or the
 tab bar. Don't reintroduce `min-h-screen` on the shell (it makes the whole page

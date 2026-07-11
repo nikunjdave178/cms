@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { X, ChevronLeft, ChevronRight, PanelLeftOpen } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLayout } from '../context/LayoutContext'
 import { matchNavItem } from '../constants/nav'
 
-export default function TabBar({ showRestoreRail, onRestoreRail }) {
+export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { tabs, activeTabPath, openOrActivateTab, closeTab } = useLayout()
@@ -44,21 +44,13 @@ export default function TabBar({ showRestoreRail, onRestoreRail }) {
     e.stopPropagation()
     const wasActive = path === activeTabPath
     const newActive = closeTab(path)
-    if (wasActive) navigate(newActive)
+    // newActive is null once the last tab closes — nothing to route to; Layout
+    // swaps to the empty-state placeholder instead based on activeTabPath.
+    if (wasActive && newActive) navigate(newActive)
   }
 
   return (
     <div className="shrink-0 bg-white border-b border-gray-200 flex items-stretch">
-      {showRestoreRail && (
-        <button
-          onClick={onRestoreRail}
-          title="Show sidebar"
-          className="shrink-0 flex items-center px-3 text-gray-500 hover:text-gray-800 hover:bg-gray-50 border-r border-gray-200"
-        >
-          <PanelLeftOpen className="h-4 w-4" strokeWidth={1.8} />
-        </button>
-      )}
-
       {canScrollLeft && (
         <button
           onClick={() => scrollBy(-200)}
@@ -80,21 +72,21 @@ export default function TabBar({ showRestoreRail, onRestoreRail }) {
               key={tab.path}
               ref={(el) => (tabRefs.current[tab.path] = el)}
               onClick={() => navigate(tab.path)}
-              className={`group shrink-0 flex items-center gap-2 pl-4 pr-2 py-2.5 text-sm font-medium border-r border-gray-200 whitespace-nowrap transition-colors ${
+              className={`shrink-0 w-40 flex items-center justify-between gap-2 pl-4 pr-2 py-2.5 text-sm font-medium border-r border-gray-200 transition-colors ${
                 isActive ? 'bg-gray-50 text-primary-700 border-b-2 border-b-primary-600' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              <span className="max-w-[10rem] truncate">{tab.title}</span>
-              {tab.closable && (
-                <span
-                  role="button"
-                  tabIndex={-1}
-                  onClick={(e) => handleClose(e, tab.path)}
-                  className="rounded p-0.5 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 hover:text-gray-700"
-                >
-                  <X className="h-3.5 w-3.5" strokeWidth={2} />
-                </span>
-              )}
+              <span className="min-w-0 flex-1 truncate text-left">{tab.title}</span>
+              <span
+                role="button"
+                tabIndex={-1}
+                aria-label={`Close ${tab.title} tab`}
+                data-testid="tab-close"
+                onClick={(e) => handleClose(e, tab.path)}
+                className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </span>
             </button>
           )
         })}
