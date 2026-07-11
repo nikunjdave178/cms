@@ -56,13 +56,15 @@ them instead of raw HTML controls** so every screen looks and behaves the same.
 | `Spinner` | Loading state | `className` |
 | `Modal` | Generic modal shell (portal, escape/backdrop close, scroll lock) | `onClose, title?, size` |
 | `ConfirmModal` | Destructive confirmation, built on `Modal` | `message, onConfirm, onCancel` |
+| `EmptyState` | Icon + title + description placeholder | `icon, title, description?` |
+| `UserMenu` | Top-right initials-avatar trigger; click opens a small anchored dropdown (name, role, logout) | none (reads `useAuth()` directly) |
 
 **`onChange` contract:** primitives call `onChange(value)` with the raw value,
 not a DOM event. Form `set()` handlers accept either (`e?.target ? e.target.value : e`).
 
 Missing primitives to add when first needed (keep them here, not per-page):
 `Button`, `Input`, `TextArea`, `FormField` (label+control+error wrapper),
-`Badge`, `Table`, `EmptyState`, `PageHeader`.
+`Badge`, `Table`, `PageHeader`.
 
 ### 2. Layout (`components/`)
 
@@ -73,12 +75,22 @@ labels via local component state, closing on mouse-out — no persisted open/clo
 preference, no manual pin or hide control. Hovering the "Menu" row specifically
 opens `MenuFlyout`, a grouped/role-filtered listing of every nav destination
 attached flush to the rail's current right edge — no click, no backdrop, no portal;
-it's positioned `absolute` alongside the rail and closes when the mouse leaves.
-User footer at the bottom), `TabBar` (top tab strip — one tab per visited URL; also owns the
-`useLocation` watcher that opens/activates a tab on every navigation). The shell is
-`h-screen overflow-hidden`; only the content area scrolls — never the rail or the
-tab bar. Don't reintroduce `min-h-screen` on the shell (it makes the whole page
-scroll together).
+it's positioned `absolute` alongside the rail and closes when the mouse leaves. No
+user info lives in the rail — that's `TabBar`'s job), `TabBar` (top tab strip — one
+tab per visited URL, sized uniformly (`w-40`), all closable with an always-visible
+close button; also owns the `useLocation` watcher that opens/activates a tab on
+every navigation, keyed on both `pathname` and `key` so re-navigating to the
+already-current path still reopens its tab. Has a fixed min-height and a
+`shrink-0` right-hand section — outside the scrollable tab strip — hosting
+`UserMenu`, so the bar and the user control stay visible and reachable regardless
+of tab count or scroll position). The shell is `h-screen overflow-hidden`; only the
+content area scrolls — never the rail or the tab bar. Don't reintroduce
+`min-h-screen` on the shell (it makes the whole page scroll together).
+
+When every tab is closed, `Layout` renders `EmptyState` in `<main>` instead of
+`<Outlet/>` (keyed off `activeTabPath` being `null`) — the rail's nav links also
+stop showing an "active" highlight in that state, since highlighting a route with
+nothing open would be misleading.
 
 Pages that want a live tab title (e.g. a detail screen showing the record's name
 instead of a generic label) call `useTabTitle(title)` from `hooks/` once their data

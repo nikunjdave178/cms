@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutGrid } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { Menu as MenuIcon } from 'lucide-react'
 import { useLayout } from '../context/LayoutContext'
 import { QUICK_ACCESS_ITEMS } from '../constants/nav'
 import MenuFlyout from './MenuFlyout'
@@ -45,7 +44,6 @@ function RailLink({ to, end, icon: Icon, label, showLabel, onClick, forceInactiv
 }
 
 export default function Rail() {
-  const { user, logout } = useAuth()
   const { activeTabPath } = useLayout()
   const [peeking, setPeeking] = useState(false)
   const [menuHover, setMenuHover] = useState(false)
@@ -108,7 +106,7 @@ export default function Rail() {
 
         <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-0.5">
           <div data-testid="menu-trigger" onMouseEnter={openMenu} onMouseLeave={scheduleMenuClose}>
-            <RailButton icon={LayoutGrid} label="Menu" showLabel={peeking} />
+            <RailButton icon={MenuIcon} label="Menu" showLabel={peeking} />
           </div>
           <div className="pt-2 space-y-0.5">
             {QUICK_ACCESS_ITEMS.map((item) => (
@@ -125,26 +123,6 @@ export default function Rail() {
             ))}
           </div>
         </nav>
-
-        <div className={`shrink-0 px-3 py-4 border-t border-slate-700/60 ${peeking ? '' : 'flex flex-col items-center'}`}>
-          {peeking ? (
-            <>
-              <p className="text-sm font-medium text-slate-200 truncate">{user?.fullName}</p>
-              <p className="text-xs text-slate-500">{user?.role}</p>
-              <button onClick={logout} className="mt-3 text-xs font-medium text-slate-400 hover:text-white transition-colors">
-                Log out
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={logout}
-              title="Log out"
-              className="text-xs font-medium text-slate-400 hover:text-white transition-colors"
-            >
-              Log out
-            </button>
-          )}
-        </div>
       </div>
 
       {menuHover && (

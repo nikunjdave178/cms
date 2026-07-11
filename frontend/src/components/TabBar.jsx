@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLayout } from '../context/LayoutContext'
 import { matchNavItem } from '../constants/nav'
+import UserMenu from './UserMenu'
 
 export default function TabBar() {
   const location = useLocation()
@@ -17,11 +18,17 @@ export default function TabBar() {
   // Opens/activates a tab for every navigation, regardless of source (rail, menu modal,
   // in-page links, redirects, back/forward, direct URL) — the router already produces
   // one canonical location for all of them, so hooking it here is exhaustive.
+  //
+  // location.key (not just pathname) is in the deps: react-router assigns a fresh key
+  // to every navigation entry, including a repeat navigation to the path you're
+  // already on. Keying on pathname alone misses that case — e.g. close the only open
+  // tab while on "/", click "Dashboard" again, pathname stays "/" so the effect
+  // wouldn't re-fire and the tab would never reopen.
   useEffect(() => {
     const navItem = matchNavItem(location.pathname)
     openOrActivateTab(location.pathname, navItem?.label ?? location.pathname)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname])
+  }, [location.pathname, location.key])
 
   const updateScrollState = () => {
     const el = scrollRef.current
@@ -50,7 +57,7 @@ export default function TabBar() {
   }
 
   return (
-    <div className="shrink-0 bg-white border-b border-gray-200 flex items-stretch">
+    <div data-testid="tab-bar" className="shrink-0 min-h-[3.25rem] bg-white border-b border-gray-200 flex items-stretch">
       {canScrollLeft && (
         <button
           onClick={() => scrollBy(-200)}
@@ -100,6 +107,10 @@ export default function TabBar() {
           <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
         </button>
       )}
+
+      <div className="shrink-0 flex items-center border-l border-gray-200 px-3">
+        <UserMenu />
+      </div>
     </div>
   )
 }
