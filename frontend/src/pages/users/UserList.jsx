@@ -54,7 +54,7 @@ export default function UserList() {
     <div className="space-y-4">
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <div className="flex justify-end">
-        <Link to="/users/new" className="btn-primary">+ Add User</Link>
+        <Link to="/app/users/new" className="btn-primary">+ Add User</Link>
       </div>
 
       {loading ? <Spinner /> : (
@@ -84,7 +84,7 @@ export default function UserList() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link to={`/users/${u.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
+                    <Link to={`/app/users/${u.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
                     <button className="btn-danger text-xs" onClick={() => setDeleteTarget(u)}>Delete</button>
                   </td>
                 </tr>

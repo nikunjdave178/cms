@@ -45,7 +45,7 @@ export default function DoctorList() {
     <div className="space-y-4">
       {canEdit && (
         <div className="flex justify-end">
-          <Link to="/doctors/new" className="btn-primary">+ Add Doctor</Link>
+          <Link to="/app/doctors/new" className="btn-primary">+ Add Doctor</Link>
         </div>
       )}
 
@@ -71,7 +71,7 @@ export default function DoctorList() {
                   <td className="px-4 py-3 text-gray-500">{d.email ?? '—'}</td>
                   <td className="px-4 py-3 text-right">
                     {canEdit && <>
-                      <Link to={`/doctors/${d.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
+                      <Link to={`/app/doctors/${d.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
                       <button className="btn-danger text-xs" onClick={() => setDeleteTarget(d)}>Delete</button>
                     </>}
                   </td>

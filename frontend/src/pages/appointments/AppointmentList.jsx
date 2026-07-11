@@ -69,7 +69,7 @@ export default function AppointmentList() {
           ]}
         />
         <div className="flex-1" />
-        <Link to="/appointments/new" className="btn-primary">+ New Appointment</Link>
+        <Link to="/app/appointments/new" className="btn-primary">+ New Appointment</Link>
       </div>
 
       {loading ? <Spinner /> : (
@@ -88,7 +88,7 @@ export default function AppointmentList() {
               ) : appointments.map(a => (
                 <tr key={a.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium">
-                    <Link to={`/patients/${a.patientId}`} className="text-indigo-600 hover:underline">{a.patientName}</Link>
+                    <Link to={`/app/patients/${a.patientId}`} className="text-indigo-600 hover:underline">{a.patientName}</Link>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{a.doctorName}</td>
                   <td className="px-4 py-3 text-gray-500">{a.doctorSpecialization}</td>
@@ -107,7 +107,7 @@ export default function AppointmentList() {
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link to={`/appointments/${a.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
+                    <Link to={`/app/appointments/${a.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
                     <button className="btn-danger text-xs" onClick={() => setDeleteTarget(a)}>Delete</button>
                   </td>
                 </tr>

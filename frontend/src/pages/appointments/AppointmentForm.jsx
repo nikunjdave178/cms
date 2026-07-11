@@ -133,7 +133,7 @@ export default function AppointmentForm() {
         else await createVitals(apptId, vitalsPayload)
       }
 
-      navigate('/appointments')
+      navigate('/app/appointments')
     } catch (e) {
       setError(e.message)
     } finally {
@@ -265,7 +265,7 @@ export default function AppointmentForm() {
           <button className="btn-primary" type="submit" disabled={saving}>
             {saving ? 'Saving…' : isEdit ? 'Update' : 'Book Appointment'}
           </button>
-          <button className="btn-secondary" type="button" onClick={() => navigate('/appointments')}>Cancel</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate('/app/appointments')}>Cancel</button>
         </div>
       </form>
     </div>

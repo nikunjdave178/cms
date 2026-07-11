@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLayout } from '../context/LayoutContext'
-import { matchNavItem } from '../constants/nav'
+import { matchNavItem, MAIN_PATH } from '../constants/nav'
 import UserMenu from './UserMenu'
 
 export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { tabs, activeTabPath, openOrActivateTab, closeTab } = useLayout()
+  const { tabs, activeTabPath, openOrActivateTab, closeTab, setActiveTab } = useLayout()
 
   const scrollRef = useRef(null)
   const tabRefs = useRef({})
@@ -22,9 +22,17 @@ export default function TabBar() {
   // location.key (not just pathname) is in the deps: react-router assigns a fresh key
   // to every navigation entry, including a repeat navigation to the path you're
   // already on. Keying on pathname alone misses that case — e.g. close the only open
-  // tab while on "/", click "Dashboard" again, pathname stays "/" so the effect
-  // wouldn't re-fire and the tab would never reopen.
+  // tab while on a route, click that same nav item again, pathname is unchanged so
+  // the effect wouldn't re-fire and the tab would never reopen.
+  //
+  // MAIN_PATH is the deliberately blank landing route — it never opens a tab, and
+  // landing on it (directly, or because the last tab just closed) clears whatever
+  // tab was active so Layout shows the empty state instead of stale page content.
   useEffect(() => {
+    if (location.pathname === MAIN_PATH) {
+      setActiveTab(null)
+      return
+    }
     const navItem = matchNavItem(location.pathname)
     openOrActivateTab(location.pathname, navItem?.label ?? location.pathname)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,9 +59,10 @@ export default function TabBar() {
     e.stopPropagation()
     const wasActive = path === activeTabPath
     const newActive = closeTab(path)
-    // newActive is null once the last tab closes — nothing to route to; Layout
-    // swaps to the empty-state placeholder instead based on activeTabPath.
-    if (wasActive && newActive) navigate(newActive)
+    // newActive is null once the last tab closes — route to the blank landing
+    // page instead of leaving the URL stuck on the just-closed tab's route
+    // (which would silently reopen it on a refresh).
+    if (wasActive) navigate(newActive ?? MAIN_PATH)
   }
 
   return (

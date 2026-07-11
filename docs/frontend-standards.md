@@ -87,6 +87,20 @@ of tab count or scroll position). The shell is `h-screen overflow-hidden`; only 
 content area scrolls — never the rail or the tab bar. Don't reintroduce
 `min-h-screen` on the shell (it makes the whole page scroll together).
 
+**Routing**: every module route lives under `/app/*` (`/app/dashboard`,
+`/app/patients`, …, from `constants/nav.js`'s `DASHBOARD_PATH`/`NAV_ITEMS`) —
+nothing is ever routed at bare `/`; it redirects to `MAIN_PATH` (`/app/main`), a
+deliberately blank landing route. `TabBar` special-cases `MAIN_PATH`: it never
+opens a tab for it, and landing on it clears `activeTabPath` so `Layout` shows
+`EmptyState`. Closing the last open tab navigates to `MAIN_PATH` explicitly
+(rather than leaving the URL on the just-closed route, which would silently
+reopen it on refresh). Login always lands on `DASHBOARD_PATH` — it does not
+restore whatever page you were on before a session expired; the tab system
+already resumes your session's open tabs from `sessionStorage`, so a second
+"return to previous page" mechanism was redundant and had produced a confusing
+bug (landing back on whatever page you happened to be logged out from instead
+of Dashboard).
+
 When every tab is closed, `Layout` renders `EmptyState` in `<main>` instead of
 `<Outlet/>` (keyed off `activeTabPath` being `null`) — the rail's nav links also
 stop showing an "active" highlight in that state, since highlighting a route with

@@ -39,7 +39,7 @@ export default function PatientDetail() {
 
   const handleDelete = async () => {
     await deletePatient(id)
-    navigate('/patients')
+    navigate('/app/patients')
   }
 
   if (loading) return <Spinner />
@@ -58,7 +58,7 @@ export default function PatientDetail() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link to={`/patients/${id}/edit`} className="btn-secondary">Edit</Link>
+          <Link to={`/app/patients/${id}/edit`} className="btn-secondary">Edit</Link>
           <button className="btn-danger" onClick={() => setShowDelete(true)}>Delete</button>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function PatientDetail() {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h4 className="font-semibold">Appointments ({appointments.length})</h4>
-          <Link to={`/appointments/new?patientId=${id}`} className="btn-primary text-xs">+ Book</Link>
+          <Link to={`/app/appointments/new?patientId=${id}`} className="btn-primary text-xs">+ Book</Link>
         </div>
         {appointments.length === 0 ? <p className="text-gray-400 text-sm">No appointments.</p> : (
           <table className="w-full text-sm">
@@ -125,7 +125,7 @@ export default function PatientDetail() {
               </p>
             )}
           </div>
-          <Link to={`/billing/new?patientId=${id}`} className="btn-primary text-xs">+ Invoice</Link>
+          <Link to={`/app/billing/new?patientId=${id}`} className="btn-primary text-xs">+ Invoice</Link>
         </div>
         {invoices.length === 0 ? <p className="text-gray-400 text-sm">No invoices.</p> : (
           <table className="w-full text-sm">

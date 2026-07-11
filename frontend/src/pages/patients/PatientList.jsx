@@ -158,7 +158,7 @@ export default function PatientList() {
           <button className="btn-secondary" type="button" disabled={exporting} onClick={() => handleExport('xlsx')}>
             {exporting ? 'Exporting…' : 'Export XLSX'}
           </button>
-          <Link to="/patients/new" className="btn-primary">+ New Patient</Link>
+          <Link to="/app/patients/new" className="btn-primary">+ New Patient</Link>
         </div>
       </div>
 
@@ -238,10 +238,10 @@ export default function PatientList() {
                 ) : patients.map(p => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                      <Link to={`/patients/${p.id}`} className="hover:underline">{p.patientNumber}</Link>
+                      <Link to={`/app/patients/${p.id}`} className="hover:underline">{p.patientNumber}</Link>
                     </td>
                     <td className="px-4 py-3 font-medium text-primary-600">
-                      <Link to={`/patients/${p.id}`}>{fullName(p)}</Link>
+                      <Link to={`/app/patients/${p.id}`}>{fullName(p)}</Link>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{p.genderDisplay}</td>
                     <td className="px-4 py-3 text-gray-600">
@@ -255,7 +255,7 @@ export default function PatientList() {
                       {format(new Date(p.createdAt), 'd MMM yyyy')}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link to={`/patients/${p.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
+                      <Link to={`/app/patients/${p.id}/edit`} className="btn-secondary text-xs mr-2">Edit</Link>
                       <button className="btn-danger text-xs" onClick={() => setDeleteTarget(p)}>Delete</button>
                     </td>
                   </tr>

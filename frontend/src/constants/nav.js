@@ -9,16 +9,21 @@ import {
   Hash,
 } from 'lucide-react'
 
+// Every module route lives under /app/* — nothing is routed at bare "/".
+// MAIN_PATH is the deliberately blank landing route (no tab opens for it).
+export const MAIN_PATH = '/app/main'
+export const DASHBOARD_PATH = '/app/dashboard'
+
 export const NAV_GROUPS = [
   {
     id: 'main',
     label: 'Main',
     items: [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard, end: true, quickAccess: true },
-      { path: '/patients', label: 'Patients', icon: Users, quickAccess: true },
-      { path: '/appointments', label: 'Appointments', icon: CalendarDays, quickAccess: true },
-      { path: '/billing', label: 'Billing', icon: Receipt, quickAccess: true },
-      { path: '/doctors', label: 'Doctors', icon: Stethoscope },
+      { path: DASHBOARD_PATH, label: 'Dashboard', icon: LayoutDashboard, quickAccess: true },
+      { path: '/app/patients', label: 'Patients', icon: Users, quickAccess: true },
+      { path: '/app/appointments', label: 'Appointments', icon: CalendarDays, quickAccess: true },
+      { path: '/app/billing', label: 'Billing', icon: Receipt, quickAccess: true },
+      { path: '/app/doctors', label: 'Doctors', icon: Stethoscope },
     ],
   },
   {
@@ -26,9 +31,9 @@ export const NAV_GROUPS = [
     label: 'Administration',
     roles: ['Admin'],
     items: [
-      { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['Admin'] },
-      { path: '/users', label: 'Users', icon: UserCog, roles: ['Admin'] },
-      { path: '/settings/numbering', label: 'Numbering', icon: Hash, roles: ['Admin'] },
+      { path: '/app/reports', label: 'Reports', icon: BarChart3, roles: ['Admin'] },
+      { path: '/app/users', label: 'Users', icon: UserCog, roles: ['Admin'] },
+      { path: '/app/settings/numbering', label: 'Numbering', icon: Hash, roles: ['Admin'] },
     ],
   },
 ]
@@ -40,6 +45,6 @@ export const QUICK_ACCESS_ITEMS = NAV_ITEMS.filter((i) => i.quickAccess)
 // Longest-prefix match against a pathname, used to seed a tab's fallback title.
 export function matchNavItem(pathname) {
   return NAV_ITEMS
-    .filter((i) => (i.path === '/' ? pathname === '/' : pathname === i.path || pathname.startsWith(i.path + '/')))
+    .filter((i) => pathname === i.path || pathname.startsWith(i.path + '/'))
     .sort((a, b) => b.path.length - a.path.length)[0]
 }

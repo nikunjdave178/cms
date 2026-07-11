@@ -72,7 +72,7 @@ export default function DoctorForm() {
       }
       if (isEdit) await updateDoctor(id, payload)
       else await createDoctor(payload)
-      navigate('/doctors')
+      navigate('/app/doctors')
     } catch (e) {
       setError(e.message)
     } finally {
@@ -131,7 +131,7 @@ export default function DoctorForm() {
           <button className="btn-primary" type="submit" disabled={saving}>
             {saving ? 'Saving…' : isEdit ? 'Update Doctor' : 'Add Doctor'}
           </button>
-          <button className="btn-secondary" type="button" onClick={() => navigate('/doctors')}>
+          <button className="btn-secondary" type="button" onClick={() => navigate('/app/doctors')}>
             Cancel
           </button>
         </div>

@@ -70,15 +70,15 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Patients" value={stats.totalPatients} color="border-indigo-500" to="/patients" />
-        <StatCard label="Doctors" value={stats.totalDoctors} color="border-violet-500" to="/doctors" />
-        <StatCard label="Today's Appointments" value={stats.todayAppointments} color="border-emerald-500" to="/appointments" />
+        <StatCard label="Total Patients" value={stats.totalPatients} color="border-indigo-500" to="/app/patients" />
+        <StatCard label="Doctors" value={stats.totalDoctors} color="border-violet-500" to="/app/doctors" />
+        <StatCard label="Today's Appointments" value={stats.todayAppointments} color="border-emerald-500" to="/app/appointments" />
         <StatCard
           label="Revenue This Month"
           value={inr(stats.monthRevenue)}
           sub={`${stats.pendingInvoices} invoice${stats.pendingInvoices !== 1 ? 's' : ''} pending`}
           color="border-amber-500"
-          to="/billing"
+          to="/app/billing"
         />
       </div>
 
@@ -126,7 +126,7 @@ export default function Dashboard() {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-800">Recent Appointments</h3>
-          <Link to="/appointments" className="text-sm text-indigo-600 hover:underline">View all →</Link>
+          <Link to="/app/appointments" className="text-sm text-indigo-600 hover:underline">View all →</Link>
         </div>
         {stats.recentAppointments.length === 0 ? (
           <p className="text-gray-400 text-sm">No appointments yet.</p>

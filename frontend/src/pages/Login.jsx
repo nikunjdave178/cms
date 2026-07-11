@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { DASHBOARD_PATH } from '../constants/nav'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,7 +18,7 @@ export default function Login() {
     setError(null)
     try {
       await login(email, password)
-      navigate(location.state?.from?.pathname ?? '/', { replace: true })
+      navigate(DASHBOARD_PATH, { replace: true })
     } catch (e) {
       setError(e.message)
     } finally {

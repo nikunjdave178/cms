@@ -94,7 +94,7 @@ export default function InvoiceList() {
           ]}
         />
         <div className="flex-1" />
-        {canEdit && <Link to="/billing/new" className="btn-primary">+ New Invoice</Link>}
+        {canEdit && <Link to="/app/billing/new" className="btn-primary">+ New Invoice</Link>}
       </div>
 
       {loading ? <Spinner /> : (
@@ -114,7 +114,7 @@ export default function InvoiceList() {
                 <tr key={i.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-500 font-mono text-xs" title={i.id}>{i.invoiceNumber}</td>
                   <td className="px-4 py-3 font-medium">
-                    <Link to={`/patients/${i.patientId}`} className="text-primary-600 hover:underline">{i.patientName}</Link>
+                    <Link to={`/app/patients/${i.patientId}`} className="text-primary-600 hover:underline">{i.patientName}</Link>
                   </td>
                   <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{i.description ?? '—'}</td>
                   <td className="px-4 py-3">{inr(i.subtotalAmount)}</td>

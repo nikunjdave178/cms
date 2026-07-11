@@ -49,7 +49,7 @@ export default function UserForm() {
           fullName: form.fullName, email: form.email, role: form.role, password: form.password,
         })
       }
-      navigate('/users')
+      navigate('/app/users')
     } catch (e) {
       setError(e.message)
     } finally {
@@ -106,7 +106,7 @@ export default function UserForm() {
           <button className="btn-primary" type="submit" disabled={saving}>
             {saving ? 'Saving…' : isEdit ? 'Update User' : 'Add User'}
           </button>
-          <button className="btn-secondary" type="button" onClick={() => navigate('/users')}>
+          <button className="btn-secondary" type="button" onClick={() => navigate('/app/users')}>
             Cancel
           </button>
         </div>

@@ -237,7 +237,7 @@ export default function PatientForm() {
       }
       if (isEdit) await updatePatient(id, payload)
       else await createPatient(payload)
-      navigate('/patients')
+      navigate('/app/patients')
     } catch (e) {
       if (e.fields) {
         const mapped = {}
@@ -457,7 +457,7 @@ export default function PatientForm() {
           <button className="btn-primary" type="submit" disabled={saving}>
             {saving ? 'Saving…' : isEdit ? 'Update Patient' : 'Register Patient'}
           </button>
-          <button className="btn-secondary" type="button" onClick={() => navigate('/patients')}>Cancel</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate('/app/patients')}>Cancel</button>
         </div>
       </form>
     </div>

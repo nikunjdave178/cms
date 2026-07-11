@@ -83,7 +83,7 @@ export default function InvoiceForm() {
         paymentModeId: form.paymentModeId ? Number(form.paymentModeId) : null,
         paymentReference: form.paymentReference || null,
       })
-      navigate('/billing')
+      navigate('/app/billing')
     } catch (e) {
       setError(e.message)
     } finally {
@@ -231,7 +231,7 @@ export default function InvoiceForm() {
           <button className="btn-primary" type="submit" disabled={saving}>
             {saving ? 'Creating…' : 'Create Invoice'}
           </button>
-          <button className="btn-secondary" type="button" onClick={() => navigate('/billing')}>Cancel</button>
+          <button className="btn-secondary" type="button" onClick={() => navigate('/app/billing')}>Cancel</button>
         </div>
       </form>
     </div>
