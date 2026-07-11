@@ -156,9 +156,9 @@ not in one risky sweep.
 | # | Gap | Standard | Priority |
 |---|-----|----------|----------|
 | 1 | List endpoints return unbounded arrays | `PagedResponse<T>` + `page/pageSize/sort/search` ([backend](./backend-standards.md#pagination-filtering-sorting)) | High |
-| 2 | Two accent colours (blue buttons, indigo nav/links) | One `primary` token; migrate `indigo-*`/`blue-*` → `primary-*` | Medium |
+| 2 | `.btn-primary`/`.input` in `index.css` still use raw `blue-*` (nav surfaces migrated to `primary-*`) | One `primary` token; migrate remaining `blue-*` → `primary-*` | Medium |
 | 3 | `fullName`, `inr`, status-badge maps duplicated per page | Import from `utils/format.js` and `constants/status.js` | Medium |
-| 4 | InvoiceList has an inline modal | Use the shared `Modal`/`ConfirmModal` primitive | Low |
+| 4 | ~~InvoiceList has an inline modal~~ Generic `Modal` primitive built (`ConfirmModal`/`MenuModal` both use it); `InvoiceList`'s "Mark Paid" inline modal still not migrated | Use the shared `Modal` primitive | Low |
 | 5 | No `UpdatedAt`/audit columns | `IAuditable` base + interceptor ([backend](./backend-standards.md#auditing)) | Medium |
 | 6 | No API versioning | `api/v1/...` prefix when the first breaking change is needed | Low |
 | 7 | FE data fetching is hand-rolled `useEffect` | Adopt TanStack Query for caching/retries/invalidation | Medium |

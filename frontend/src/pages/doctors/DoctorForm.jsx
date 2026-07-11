@@ -5,6 +5,7 @@ import Spinner from '../../components/Spinner'
 import Select from '../../components/Select'
 import CountryCodeSelect from '../../components/CountryCodeSelect'
 import { PHONE_LENGTHS } from '../../data/countries'
+import { useTabTitle } from '../../hooks/useTabTitle'
 
 const SPECIALIZATIONS = [
   'General Practice', 'Cardiology', 'Dermatology', 'Endocrinology',
@@ -23,6 +24,8 @@ export default function DoctorForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+
+  useTabTitle(isEdit ? 'Edit Doctor' : 'Add Doctor')
 
   const [form, setForm] = useState(empty)
   const [loading, setLoading] = useState(isEdit)

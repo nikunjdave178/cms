@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import Select from '../../components/Select'
 import { fullName, inr } from '../../utils/format'
+import { useTabTitle } from '../../hooks/useTabTitle'
 
 const emptyItem = () => ({ description: '', quantity: '1', unitPrice: '' })
 
@@ -16,6 +17,8 @@ const GST_RATES = ['', '5', '12', '18', '28']
 export default function InvoiceForm() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+
+  useTabTitle('New Invoice')
 
   const { values: paymentModes } = useStaticValues('PAYMENT_MODE')
 

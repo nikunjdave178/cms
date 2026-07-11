@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getUser, createUser, updateUser } from '../../api/users'
 import Spinner from '../../components/Spinner'
 import Select from '../../components/Select'
+import { useTabTitle } from '../../hooks/useTabTitle'
 
 const ROLES = ['Admin', 'Doctor', 'Receptionist']
 
@@ -12,6 +13,8 @@ export default function UserForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+
+  useTabTitle(isEdit ? 'Edit User' : 'Add User')
 
   const [form, setForm] = useState(empty)
   const [loading, setLoading] = useState(isEdit)

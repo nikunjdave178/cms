@@ -11,6 +11,7 @@ import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import Select from '../../components/Select'
 import { fullName, doctorName } from '../../utils/format'
+import { useTabTitle } from '../../hooks/useTabTitle'
 
 const toLocalDateTimeInput = (iso) => format(new Date(iso), "yyyy-MM-dd'T'HH:mm")
 
@@ -24,6 +25,8 @@ export default function AppointmentForm() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+
+  useTabTitle(isEdit ? 'Edit Appointment' : 'Book New Appointment')
 
   const { values: statuses } = useStaticValues('APPOINTMENT_STATUS')
 

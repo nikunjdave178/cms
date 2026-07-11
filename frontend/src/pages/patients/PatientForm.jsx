@@ -10,6 +10,7 @@ import Combobox from '../../components/Combobox'
 import CountryCodeSelect from '../../components/CountryCodeSelect'
 import { PHONE_LENGTHS, COUNTRIES_INDIA_FIRST } from '../../data/countries'
 import { IN_STATES, IN_CITIES, CITY_PINCODES, lookupPincode, lookupCity } from '../../data/pincodes'
+import { useTabTitle } from '../../hooks/useTabTitle'
 
 const empty = {
   firstName: '', middleName: '', lastName: '', dateOfBirth: '',
@@ -83,6 +84,8 @@ export default function PatientForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+
+  useTabTitle(isEdit ? 'Edit Patient' : 'Register New Patient')
 
   const { values: genders, loading: gLoading } = useStaticValues('GENDER')
   const { values: bloodGroups, loading: bgLoading } = useStaticValues('BLOOD_GROUP')

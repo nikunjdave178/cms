@@ -8,6 +8,7 @@ import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
 import { fullName } from '../../utils/format'
 import { badgeClass } from '../../constants/status'
+import { useTabTitle } from '../../hooks/useTabTitle'
 
 function Field({ label, value }) {
   return (
@@ -33,6 +34,8 @@ export default function PatientDetail() {
       .then(([p, a, inv]) => { setPatient(p); setAppointments(a.items); setInvoices(inv.items) })
       .finally(() => setLoading(false))
   }, [id])
+
+  useTabTitle(patient && fullName(patient))
 
   const handleDelete = async () => {
     await deletePatient(id)

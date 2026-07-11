@@ -1,29 +1,16 @@
-import { Outlet, useLocation } from 'react-router-dom'
-import Sidebar from './Sidebar'
-
-const titles = {
-  '/': 'Dashboard',
-  '/patients': 'Patients',
-  '/appointments': 'Appointments',
-  '/billing': 'Billing',
-  '/doctors': 'Doctors',
-  '/reports': 'Reports',
-  '/users': 'Users',
-  '/settings': 'Auto Number Setup',
-}
+import { Outlet } from 'react-router-dom'
+import Rail from './Rail'
+import TabBar from './TabBar'
+import { useLayout } from '../context/LayoutContext'
 
 export default function Layout() {
-  const location = useLocation()
-  const segment = '/' + location.pathname.split('/')[1]
-  const title = titles[segment] ?? 'Clinic MS'
+  const { railState, restoreRail } = useLayout()
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      {railState !== 'hidden' && <Rail />}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="shrink-0 bg-white border-b border-gray-200 px-8 py-4">
-          <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-        </header>
+        <TabBar showRestoreRail={railState === 'hidden'} onRestoreRail={restoreRail} />
         <main className="flex-1 overflow-y-auto p-8">
           <Outlet />
         </main>

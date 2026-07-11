@@ -54,21 +54,31 @@ them instead of raw HTML controls** so every screen looks and behaves the same.
 | `CountryCodeSelect` | Phone dial code with flag | `value, onChange` |
 | `DatePicker` | Any date input (masked dd/mm/yyyy + calendar) | `value, onChange, minYear, maxDate, error` |
 | `Spinner` | Loading state | `className` |
-| `ConfirmModal` | Destructive confirmation | `message, onConfirm, onCancel` |
+| `Modal` | Generic modal shell (portal, escape/backdrop close, scroll lock) | `onClose, title?, size` |
+| `ConfirmModal` | Destructive confirmation, built on `Modal` | `message, onConfirm, onCancel` |
+| `MenuModal` | Full grouped/role-filtered nav listing, built on `Modal`, driven by `constants/nav.js` | `onClose` |
 
 **`onChange` contract:** primitives call `onChange(value)` with the raw value,
 not a DOM event. Form `set()` handlers accept either (`e?.target ? e.target.value : e`).
 
 Missing primitives to add when first needed (keep them here, not per-page):
 `Button`, `Input`, `TextArea`, `FormField` (label+control+error wrapper),
-`Modal` (generic), `Badge`, `Table`, `EmptyState`, `PageHeader`.
+`Badge`, `Table`, `EmptyState`, `PageHeader`.
 
 ### 2. Layout (`components/`)
 
-`Layout` (app shell: fixed-height flex row, scrolls `<main>` only), `Sidebar`
-(nav + role-filtered links + user footer). The shell is `h-screen overflow-hidden`;
-only the content area scrolls — never the sidebar. Don't reintroduce `min-h-screen`
-on the shell (it makes the whole page scroll together).
+`Layout` (app shell: fixed-height flex row, scrolls `<main>` only), `Rail` (icon
+rail — menu trigger opening `MenuModal`, fixed quick-access shortcuts from
+`constants/nav.js`, expand/collapse/hide states persisted via `LayoutContext`, user
+footer), `TabBar` (top tab strip — one tab per visited URL; also owns the
+`useLocation` watcher that opens/activates a tab on every navigation). The shell is
+`h-screen overflow-hidden`; only the content area scrolls — never the rail or the
+tab bar. Don't reintroduce `min-h-screen` on the shell (it makes the whole page
+scroll together).
+
+Pages that want a live tab title (e.g. a detail screen showing the record's name
+instead of a generic label) call `useTabTitle(title)` from `hooks/` once their data
+loads.
 
 ### 3. Feature components (`pages/<module>/`)
 
