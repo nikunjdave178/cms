@@ -9,7 +9,16 @@ vi.mock('./AuthContext', () => ({
 }))
 
 function Probe() {
-  const { tabs, activeTabPath, openOrActivateTab, closeTab, setActiveTab } = useLayout()
+  const {
+    tabs,
+    activeTabPath,
+    openOrActivateTab,
+    closeTab,
+    closeOtherTabs,
+    closeTabsToTheRight,
+    closeAllTabs,
+    setActiveTab,
+  } = useLayout()
   return (
     <div>
       <div data-testid="tabs">{tabs.map((t) => `${t.path}:${t.title}`).join(',')}</div>
@@ -22,6 +31,10 @@ function Probe() {
       <button onClick={() => closeTab('/patients')}>close-patients</button>
       <button onClick={() => closeTab('/patients/1')}>close-john</button>
       <button onClick={() => setActiveTab('/patients')}>activate-patients</button>
+      <button onClick={() => setActiveTab('/patients/1')}>activate-john</button>
+      <button onClick={() => closeOtherTabs('/patients')}>close-others-than-patients</button>
+      <button onClick={() => closeTabsToTheRight('/patients')}>close-right-of-patients</button>
+      <button onClick={() => closeAllTabs()}>close-all</button>
     </div>
   )
 }
@@ -145,5 +158,56 @@ describe('LayoutContext tabs', () => {
     renderProbe()
     expect(screen.getByTestId('tabs').textContent).toBe('/:Dashboard,/patients:Patients')
     expect(screen.getByTestId('active').textContent).toBe('/patients')
+  })
+
+  describe('tab context-menu bulk actions', () => {
+    it('closeOtherTabs keeps only the target tab and activates it', () => {
+      renderProbe()
+      fireEvent.click(screen.getByText('open-dashboard'))
+      fireEvent.click(screen.getByText('open-patients'))
+      fireEvent.click(screen.getByText('open-john')) // active is now /patients/1
+      fireEvent.click(screen.getByText('close-others-than-patients'))
+      expect(screen.getByTestId('tabs').textContent).toBe('/patients:Patients')
+      expect(screen.getByTestId('active').textContent).toBe('/patients')
+    })
+
+    it('closeTabsToTheRight removes everything after the target but keeps the still-open active tab active', () => {
+      renderProbe()
+      fireEvent.click(screen.getByText('open-dashboard'))
+      fireEvent.click(screen.getByText('open-patients'))
+      fireEvent.click(screen.getByText('open-john'))
+      fireEvent.click(screen.getByText('activate-patients')) // active is /patients, to the LEFT of John
+      fireEvent.click(screen.getByText('close-right-of-patients'))
+      expect(screen.getByTestId('tabs').textContent).toBe('/:Dashboard,/patients:Patients')
+      expect(screen.getByTestId('active').textContent).toBe('/patients') // unchanged, it survived
+    })
+
+    it('closeTabsToTheRight falls back to activating the target tab if the active tab was among those removed', () => {
+      renderProbe()
+      fireEvent.click(screen.getByText('open-dashboard'))
+      fireEvent.click(screen.getByText('open-patients'))
+      fireEvent.click(screen.getByText('open-john')) // active is /patients/1, to the RIGHT of Patients
+      fireEvent.click(screen.getByText('close-right-of-patients'))
+      expect(screen.getByTestId('tabs').textContent).toBe('/:Dashboard,/patients:Patients')
+      expect(screen.getByTestId('active').textContent).toBe('/patients') // target tab becomes active
+    })
+
+    it('closeTabsToTheRight on the last tab is a no-op (nothing to its right)', () => {
+      renderProbe()
+      fireEvent.click(screen.getByText('open-dashboard'))
+      fireEvent.click(screen.getByText('open-patients'))
+      fireEvent.click(screen.getByText('close-right-of-patients'))
+      expect(screen.getByTestId('tabs').textContent).toBe('/:Dashboard,/patients:Patients')
+    })
+
+    it('closeAllTabs empties the tab strip regardless of which tab was active', () => {
+      renderProbe()
+      fireEvent.click(screen.getByText('open-dashboard'))
+      fireEvent.click(screen.getByText('open-patients'))
+      fireEvent.click(screen.getByText('open-john'))
+      fireEvent.click(screen.getByText('close-all'))
+      expect(screen.getByTestId('tabs').textContent).toBe('')
+      expect(screen.getByTestId('active').textContent).toBe('(none)')
+    })
   })
 })

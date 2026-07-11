@@ -46,6 +46,30 @@ function CloseTabWithoutNavigating({ path }) {
   return <button onClick={() => closeTab(path)}>close-without-navigating</button>
 }
 
+// Lets a test accumulate several open tabs by navigating around, the same way
+// clicking rail/menu links would in the real app.
+function NavigateButtons() {
+  const navigate = useNavigate()
+  return (
+    <div>
+      <button onClick={() => navigate('/app/patients')}>go-patients</button>
+      <button onClick={() => navigate('/app/appointments')}>go-appointments</button>
+      <button onClick={() => navigate('/app/billing')}>go-billing</button>
+    </div>
+  )
+}
+
+function renderTabBarWithNavigation(initialPath = DASHBOARD_PATH) {
+  return render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <LayoutProvider>
+        <TabBar />
+        <NavigateButtons />
+      </LayoutProvider>
+    </MemoryRouter>
+  )
+}
+
 describe('TabBar', () => {
   beforeEach(() => {
     sessionStorage.clear()
@@ -135,5 +159,99 @@ describe('TabBar', () => {
     // DASHBOARD_PATH with the tab merely hidden
     fireEvent.click(screen.getByText('renavigate'))
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+  })
+
+  describe('tab context menu', () => {
+    it('opens on right-click with all four actions, and closes on Escape without acting', () => {
+      renderTabBar(DASHBOARD_PATH)
+      const tab = screen.getByText('Dashboard').closest('button')
+      fireEvent.contextMenu(tab)
+
+      expect(screen.getByTestId('tab-context-menu')).toBeInTheDocument()
+      expect(screen.getByTestId('tab-context-menu-close')).toBeInTheDocument()
+      expect(screen.getByTestId('tab-context-menu-close-others')).toBeInTheDocument()
+      expect(screen.getByTestId('tab-context-menu-close-right')).toBeInTheDocument()
+      expect(screen.getByTestId('tab-context-menu-close-all')).toBeInTheDocument()
+
+      fireEvent.keyDown(window, { key: 'Escape' })
+      expect(screen.queryByTestId('tab-context-menu')).not.toBeInTheDocument()
+      expect(screen.getByText('Dashboard')).toBeInTheDocument() // untouched
+    })
+
+    it('closes on an outside click without performing any action', () => {
+      renderTabBar(DASHBOARD_PATH)
+      const tab = screen.getByText('Dashboard').closest('button')
+      fireEvent.contextMenu(tab)
+      expect(screen.getByTestId('tab-context-menu')).toBeInTheDocument()
+
+      fireEvent.mouseDown(document.body)
+      expect(screen.queryByTestId('tab-context-menu')).not.toBeInTheDocument()
+      expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    })
+
+    it('disables "Close Others" when it is the only open tab, and "Close Tabs to the Right" on the last tab', () => {
+      renderTabBar(DASHBOARD_PATH)
+      const tab = screen.getByText('Dashboard').closest('button')
+      fireEvent.contextMenu(tab)
+      expect(screen.getByTestId('tab-context-menu-close-others')).toBeDisabled()
+      expect(screen.getByTestId('tab-context-menu-close-right')).toBeDisabled()
+    })
+
+    it('"Close" removes exactly the right-clicked tab, even if it is not the active one', () => {
+      renderTabBarWithNavigation(DASHBOARD_PATH)
+      fireEvent.click(screen.getByText('go-patients')) // active is now Patients; Dashboard stays open in back
+
+      const dashboardTab = screen.getByText('Dashboard').closest('button')
+      fireEvent.contextMenu(dashboardTab)
+      fireEvent.click(screen.getByTestId('tab-context-menu-close'))
+
+      expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+      expect(screen.getByText('Patients')).toBeInTheDocument() // untouched, still active
+    })
+
+    it('"Close Others" keeps only the right-clicked tab and switches to it', () => {
+      renderTabBarWithNavigation(DASHBOARD_PATH)
+      fireEvent.click(screen.getByText('go-patients'))
+      fireEvent.click(screen.getByText('go-appointments')) // active is now Appointments
+
+      const patientsTab = screen.getByText('Patients').closest('button')
+      fireEvent.contextMenu(patientsTab)
+      fireEvent.click(screen.getByTestId('tab-context-menu-close-others'))
+
+      expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+      expect(screen.queryByText('Appointments')).not.toBeInTheDocument()
+      const remaining = screen.getByText('Patients').closest('button')
+      expect(remaining.className).toMatch(/text-primary-700/) // now active
+    })
+
+    it('"Close Tabs to the Right" removes only later tabs and keeps a still-open active tab active', () => {
+      renderTabBarWithNavigation(DASHBOARD_PATH)
+      fireEvent.click(screen.getByText('go-patients'))
+      fireEvent.click(screen.getByText('go-appointments'))
+      fireEvent.click(screen.getByText('go-billing')) // active is now Billing, rightmost
+
+      const patientsTab = screen.getByText('Patients').closest('button')
+      fireEvent.contextMenu(patientsTab)
+      fireEvent.click(screen.getByTestId('tab-context-menu-close-right'))
+
+      expect(screen.getByText('Dashboard')).toBeInTheDocument()
+      expect(screen.getByText('Patients')).toBeInTheDocument()
+      expect(screen.queryByText('Appointments')).not.toBeInTheDocument()
+      expect(screen.queryByText('Billing')).not.toBeInTheDocument()
+      // Billing was active and got removed, so the right-clicked tab (Patients) takes over
+      const patientsAfter = screen.getByText('Patients').closest('button')
+      expect(patientsAfter.className).toMatch(/text-primary-700/)
+    })
+
+    it('"Close All Tabs" empties the strip and shows the empty state', () => {
+      renderTabBarWithNavigation(DASHBOARD_PATH)
+      fireEvent.click(screen.getByText('go-patients'))
+
+      const tab = screen.getByText('Patients').closest('button')
+      fireEvent.contextMenu(tab)
+      fireEvent.click(screen.getByTestId('tab-context-menu-close-all'))
+
+      expect(document.querySelectorAll('button.w-40')).toHaveLength(0)
+    })
   })
 })

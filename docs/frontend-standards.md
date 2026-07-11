@@ -83,9 +83,16 @@ every navigation, keyed on both `pathname` and `key` so re-navigating to the
 already-current path still reopens its tab. Has a fixed min-height and a
 `shrink-0` right-hand section — outside the scrollable tab strip — hosting
 `UserMenu`, so the bar and the user control stay visible and reachable regardless
-of tab count or scroll position). The shell is `h-screen overflow-hidden`; only the
-content area scrolls — never the rail or the tab bar. Don't reintroduce
-`min-h-screen` on the shell (it makes the whole page scroll together).
+of tab count or scroll position. Right-clicking a tab opens `TabContextMenu`
+(Close / Close Others / Close Tabs to the Right / Close All Tabs — the standard
+browser/IDE set; options disable themselves when meaningless, e.g. Close Others
+with only one tab open). Overflow never scrolls past a tab boundary: the strip
+uses CSS scroll-snap, chevrons step by whole tabs, and the strip's own visible
+width is kept an exact multiple of the tab width via `ResizeObserver` so a
+partial tab is never shown at either edge). The shell is `h-screen
+overflow-hidden`; only the content area scrolls — never the rail or the tab bar.
+Don't reintroduce `min-h-screen` on the shell (it makes the whole page scroll
+together).
 
 **Routing**: every module route lives under `/app/*` (`/app/dashboard`,
 `/app/patients`, …, from `constants/nav.js`'s `DASHBOARD_PATH`/`NAV_ITEMS`) —

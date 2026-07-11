@@ -4,6 +4,7 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLayout } from '../context/LayoutContext'
 import { matchNavItem, MAIN_PATH } from '../constants/nav'
 import UserMenu from './UserMenu'
+import TabContextMenu from './TabContextMenu'
 
 // Must match the tab button's width class (w-40 = 10rem) below — kept as a
 // constant so chevron clicks can step by whole tabs, never a partial one.
@@ -12,7 +13,16 @@ const TAB_WIDTH_PX = 160
 export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { tabs, activeTabPath, openOrActivateTab, closeTab, setActiveTab } = useLayout()
+  const {
+    tabs,
+    activeTabPath,
+    openOrActivateTab,
+    closeTab,
+    closeOtherTabs,
+    closeTabsToTheRight,
+    closeAllTabs,
+    setActiveTab,
+  } = useLayout()
 
   const measureRef = useRef(null)
   const scrollRef = useRef(null)
@@ -20,6 +30,7 @@ export default function TabBar() {
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const [stripWidth, setStripWidth] = useState(0)
+  const [contextMenu, setContextMenu] = useState(null) // { path, x, y }
 
   // The visible tab strip's width must itself be an exact multiple of
   // TAB_WIDTH_PX — otherwise, whatever's left over after fitting N whole tabs
@@ -96,14 +107,39 @@ export default function TabBar() {
     el.scrollTo({ left: Math.min(Math.max(target, 0), maxAligned), behavior: 'smooth' })
   }
 
-  const handleClose = (e, path) => {
-    e.stopPropagation()
+  // newActive is null once no tabs remain — route to the blank landing page
+  // instead of leaving the URL stuck on a just-closed tab's route (which would
+  // silently reopen it on a refresh).
+  const closeTabAndNavigate = (path) => {
     const wasActive = path === activeTabPath
     const newActive = closeTab(path)
-    // newActive is null once the last tab closes — route to the blank landing
-    // page instead of leaving the URL stuck on the just-closed tab's route
-    // (which would silently reopen it on a refresh).
     if (wasActive) navigate(newActive ?? MAIN_PATH)
+  }
+
+  const handleClose = (e, path) => {
+    e.stopPropagation()
+    closeTabAndNavigate(path)
+  }
+
+  const openContextMenu = (e, path) => {
+    e.preventDefault()
+    setContextMenu({ path, x: e.clientX, y: e.clientY })
+  }
+
+  const closeContextMenu = () => setContextMenu(null)
+
+  const runContextMenuAction = (action) => {
+    if (!contextMenu) return
+    const { path } = contextMenu
+    closeContextMenu()
+
+    if (action === 'close') {
+      closeTabAndNavigate(path)
+      return
+    }
+    const newActive =
+      action === 'close-others' ? closeOtherTabs(path) : action === 'close-right' ? closeTabsToTheRight(path) : closeAllTabs()
+    navigate(newActive ?? MAIN_PATH)
   }
 
   return (
@@ -131,6 +167,7 @@ export default function TabBar() {
                 key={tab.path}
                 ref={(el) => (tabRefs.current[tab.path] = el)}
                 onClick={() => navigate(tab.path)}
+                onContextMenu={(e) => openContextMenu(e, tab.path)}
                 className={`shrink-0 snap-start w-40 flex items-center justify-between gap-2 pl-4 pr-2 py-2.5 text-sm font-medium border-r border-gray-200 transition-colors ${
                   isActive ? 'bg-gray-50 text-primary-700 border-b-2 border-b-primary-600' : 'text-gray-600 hover:bg-gray-50'
                 }`}
@@ -164,6 +201,17 @@ export default function TabBar() {
       <div className="shrink-0 flex items-center border-l border-gray-200 px-3">
         <UserMenu />
       </div>
+
+      {contextMenu && (
+        <TabContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          canCloseOthers={tabs.length > 1}
+          canCloseRight={tabs.findIndex((t) => t.path === contextMenu.path) < tabs.length - 1}
+          onAction={runContextMenuAction}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

@@ -58,6 +58,31 @@ export function LayoutProvider({ children }) {
     return newActive
   }
 
+  // Bulk-close operations for the tab context menu. Each returns the path that
+  // should become active afterward (or null) — same contract as closeTab, so
+  // callers navigate there if it differs from where they currently are.
+  const closeOtherTabs = (path) => {
+    const target = tabsState.tabs.find((t) => t.path === path)
+    if (!target) return tabsState.activeTabPath
+    setTabsState({ tabs: [target], activeTabPath: path })
+    return path
+  }
+
+  const closeTabsToTheRight = (path) => {
+    const idx = tabsState.tabs.findIndex((t) => t.path === path)
+    if (idx === -1) return tabsState.activeTabPath
+    const remaining = tabsState.tabs.slice(0, idx + 1)
+    const activeSurvives = remaining.some((t) => t.path === tabsState.activeTabPath)
+    const newActive = activeSurvives ? tabsState.activeTabPath : path
+    setTabsState({ tabs: remaining, activeTabPath: newActive })
+    return newActive
+  }
+
+  const closeAllTabs = () => {
+    setTabsState({ tabs: [], activeTabPath: null })
+    return null
+  }
+
   const setActiveTab = (path) => setTabsState((prev) => ({ ...prev, activeTabPath: path }))
 
   const setTabTitle = (path, title) => {
@@ -77,6 +102,9 @@ export function LayoutProvider({ children }) {
         activeTabPath: tabsState.activeTabPath,
         openOrActivateTab,
         closeTab,
+        closeOtherTabs,
+        closeTabsToTheRight,
+        closeAllTabs,
         setActiveTab,
         setTabTitle,
       }}
