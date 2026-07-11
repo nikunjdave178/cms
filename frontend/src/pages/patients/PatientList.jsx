@@ -11,7 +11,7 @@ import Pagination from '../../components/Pagination'
 import SortableHeader from '../../components/SortableHeader'
 import { fullName } from '../../utils/format'
 
-const emptyFilters = { genderId: '', bloodGroupId: '', city: '', state: '', registeredFrom: '', registeredTo: '' }
+const emptyFilters = { search: '', genderId: '', bloodGroupId: '', city: '', state: '', registeredFrom: '', registeredTo: '' }
 
 const COLUMNS = [
   { field: 'patientNumber', label: 'Patient No.' },
@@ -33,9 +33,6 @@ export default function PatientList() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [exporting, setExporting] = useState(false)
 
-  const [search, setSearch] = useState('')
-  const [searchInput, setSearchInput] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState(emptyFilters)
   const [draftFilters, setDraftFilters] = useState(emptyFilters)
   const [sort, setSort] = useState('-registered')
@@ -45,10 +42,11 @@ export default function PatientList() {
   const { values: genders } = useStaticValues('GENDER')
   const { values: bloodGroups } = useStaticValues('BLOOD_GROUP')
 
+  const filtersDirty = JSON.stringify(draftFilters) !== JSON.stringify(filters)
   const filtersActive = Object.values(filters).some(Boolean)
 
   const buildParams = () => ({
-    search: search || undefined,
+    search: filters.search || undefined,
     genderId: filters.genderId || undefined,
     bloodGroupId: filters.bloodGroupId || undefined,
     city: filters.city || undefined,
@@ -68,18 +66,12 @@ export default function PatientList() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [search, filters, sort, page, pageSize])
+  useEffect(() => { load() }, [filters, sort, page, pageSize])
 
-  const handleSearch = e => {
-    e.preventDefault()
-    setSearch(searchInput)
-    setPage(1)
-  }
-
-  const handleApplyFilters = () => {
+  const handleApplyFilters = (e) => {
+    e?.preventDefault()
     setFilters(draftFilters)
     setPage(1)
-    setShowFilters(false)
   }
 
   const handleClearFilters = () => {
@@ -129,95 +121,86 @@ export default function PatientList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <form onSubmit={handleSearch} className="flex gap-2 flex-1">
-          <input
-            className="input max-w-xs"
-            placeholder="Search by patient no., name or mobile…"
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-          />
-          <button className="btn-secondary" type="submit">Search</button>
-          {search && (
-            <button className="btn-secondary" type="button" onClick={() => { setSearchInput(''); setSearch(''); setPage(1) }}>
+      <form onSubmit={handleApplyFilters} className="card py-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[220px]">
+            <label className="label">Search</label>
+            <input
+              className="input"
+              placeholder="Patient no., name or mobile…"
+              value={draftFilters.search}
+              onChange={e => setDraftFilters(f => ({ ...f, search: e.target.value }))}
+            />
+          </div>
+          <div className="w-36">
+            <label className="label">Gender</label>
+            <Select
+              value={draftFilters.genderId}
+              onChange={v => setDraftFilters(f => ({ ...f, genderId: v }))}
+              options={genderOptions}
+            />
+          </div>
+          <div className="w-40">
+            <label className="label">Blood Group</label>
+            <Select
+              value={draftFilters.bloodGroupId}
+              onChange={v => setDraftFilters(f => ({ ...f, bloodGroupId: v }))}
+              options={bloodGroupOptions}
+            />
+          </div>
+          <div className="w-32">
+            <label className="label">City</label>
+            <input
+              className="input"
+              value={draftFilters.city}
+              onChange={e => setDraftFilters(f => ({ ...f, city: e.target.value }))}
+            />
+          </div>
+          <div className="w-32">
+            <label className="label">State</label>
+            <input
+              className="input"
+              value={draftFilters.state}
+              onChange={e => setDraftFilters(f => ({ ...f, state: e.target.value }))}
+            />
+          </div>
+          <div className="w-36">
+            <label className="label">Registered From</label>
+            <DatePicker
+              value={draftFilters.registeredFrom}
+              onChange={v => setDraftFilters(f => ({ ...f, registeredFrom: v }))}
+            />
+          </div>
+          <div className="w-36">
+            <label className="label">Registered To</label>
+            <DatePicker
+              value={draftFilters.registeredTo}
+              onChange={v => setDraftFilters(f => ({ ...f, registeredTo: v }))}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleClearFilters}
+              disabled={!filtersActive && !filtersDirty}
+            >
               Clear
             </button>
-          )}
-          <button
-            type="button"
-            className={`btn-secondary ${filtersActive ? 'ring-2 ring-primary-300' : ''}`}
-            onClick={() => setShowFilters(f => !f)}
-          >
-            Filters{filtersActive ? ' •' : ''}
-          </button>
-        </form>
-        <div className="flex items-center gap-2">
-          <button className="btn-secondary" type="button" disabled={exporting} onClick={() => handleExport('csv')}>
-            {exporting ? 'Exporting…' : 'Export CSV'}
-          </button>
-          <button className="btn-secondary" type="button" disabled={exporting} onClick={() => handleExport('xlsx')}>
-            {exporting ? 'Exporting…' : 'Export XLSX'}
-          </button>
-          <Link to="/app/patients/new" className="btn-primary">+ New Patient</Link>
+            <button type="submit" className="btn-primary" disabled={!filtersDirty}>Apply</button>
+          </div>
         </div>
-      </div>
+      </form>
 
-      {showFilters && (
-        <div className="card space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="label">Gender</label>
-              <Select
-                value={draftFilters.genderId}
-                onChange={v => setDraftFilters(f => ({ ...f, genderId: v }))}
-                options={genderOptions}
-              />
-            </div>
-            <div>
-              <label className="label">Blood Group</label>
-              <Select
-                value={draftFilters.bloodGroupId}
-                onChange={v => setDraftFilters(f => ({ ...f, bloodGroupId: v }))}
-                options={bloodGroupOptions}
-              />
-            </div>
-            <div>
-              <label className="label">City</label>
-              <input
-                className="input"
-                value={draftFilters.city}
-                onChange={e => setDraftFilters(f => ({ ...f, city: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="label">State</label>
-              <input
-                className="input"
-                value={draftFilters.state}
-                onChange={e => setDraftFilters(f => ({ ...f, state: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="label">Registered From</label>
-              <DatePicker
-                value={draftFilters.registeredFrom}
-                onChange={v => setDraftFilters(f => ({ ...f, registeredFrom: v }))}
-              />
-            </div>
-            <div>
-              <label className="label">Registered To</label>
-              <DatePicker
-                value={draftFilters.registeredTo}
-                onChange={v => setDraftFilters(f => ({ ...f, registeredTo: v }))}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button type="button" className="btn-secondary" onClick={handleClearFilters}>Clear Filters</button>
-            <button type="button" className="btn-primary" onClick={handleApplyFilters}>Apply Filters</button>
-          </div>
-        </div>
-      )}
+      <div className="flex items-center justify-end gap-2">
+        <button className="btn-secondary" type="button" disabled={exporting} onClick={() => handleExport('csv')}>
+          {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
+        <button className="btn-secondary" type="button" disabled={exporting} onClick={() => handleExport('xlsx')}>
+          {exporting ? 'Exporting…' : 'Export XLSX'}
+        </button>
+        <Link to="/app/patients/new" className="btn-primary">+ New Patient</Link>
+      </div>
 
       {error && <p className="text-danger-600 text-sm">{error}</p>}
       {loading ? <Spinner /> : (
