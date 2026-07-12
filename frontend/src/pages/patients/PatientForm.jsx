@@ -4,12 +4,15 @@ import { createPatient } from '../../api/patients'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import Spinner from '../../components/Spinner'
 import { useTabTitle } from '../../hooks/useTabTitle'
+import { useToast } from '../../context/ToastContext'
+import { fullName } from '../../utils/format'
 import PatientFormFields, {
   emptyPatientForm, validatePatientForm, buildPatientPayload, normalizeFieldKey,
 } from './PatientFormFields'
 
 export default function PatientForm() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
 
   useTabTitle('Register New Patient')
 
@@ -42,6 +45,7 @@ export default function PatientForm() {
     try {
       const payload = buildPatientPayload(form)
       await createPatient(payload)
+      showToast(`Patient "${fullName(form)}" created successfully.`)
       navigate('/app/patients')
     } catch (e) {
       if (e.fields) {

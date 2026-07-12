@@ -2,7 +2,10 @@ import axios from 'axios'
 
 export const AUTH_STORAGE_KEY = 'cms_auth'
 
-const client = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' })
+// indexes: null makes array params serialize as repeated keys (genderIds=1&genderIds=2)
+// instead of axios's default bracket-indexed form (genderIds[0]=1&genderIds[1]=2), which
+// ASP.NET Core's query-string model binder for int[]/List<int> parameters doesn't understand.
+const client = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api', paramsSerializer: { indexes: null } })
 
 client.interceptors.request.use(config => {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY)

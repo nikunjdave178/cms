@@ -54,9 +54,11 @@ public record PatientRequest(
 );
 
 public record PatientListQuery(
-    string? Search,
-    int? GenderId,
-    int? BloodGroupId,
+    string? PatientNumber,
+    string? Name,
+    string? Mobile,
+    int[]? GenderIds,
+    int[]? BloodGroupIds,
     string? City,
     string? State,
     DateOnly? RegisteredFrom,

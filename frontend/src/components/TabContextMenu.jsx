@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 const ITEMS = [
-  { action: 'close', label: 'Close' },
+  { action: 'reload', label: 'Reload' },
+  { action: 'close', label: 'Close', divider: true },
   { action: 'close-others', label: 'Close Others' },
   { action: 'close-right', label: 'Close Tabs to the Right' },
   { action: 'close-all', label: 'Close All Tabs' },
@@ -50,7 +51,7 @@ export default function TabContextMenu({ x, y, canCloseOthers, canCloseRight, on
       style={{ position: 'fixed', ...style }}
       className="z-50 w-56 rounded-xl border border-gray-200 bg-white shadow-2xl py-1"
     >
-      {ITEMS.map(({ action, label }) => {
+      {ITEMS.map(({ action, label, divider }) => {
         const disabled = disabledFor(action)
         return (
           <button
@@ -59,8 +60,8 @@ export default function TabContextMenu({ x, y, canCloseOthers, canCloseRight, on
             disabled={disabled}
             onClick={() => onAction(action)}
             className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
-              disabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'
-            }`}
+              divider ? 'border-t border-gray-100' : ''
+            } ${disabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
           >
             {label}
           </button>

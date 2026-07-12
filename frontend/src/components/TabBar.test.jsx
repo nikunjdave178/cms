@@ -171,12 +171,13 @@ describe('TabBar', () => {
   })
 
   describe('tab context menu', () => {
-    it('opens on right-click with all four actions, and closes on Escape without acting', () => {
+    it('opens on right-click with all five actions, and closes on Escape without acting', () => {
       renderTabBar(DASHBOARD_PATH)
       const tab = screen.getByText('Dashboard').closest('button')
       fireEvent.contextMenu(tab)
 
       expect(screen.getByTestId('tab-context-menu')).toBeInTheDocument()
+      expect(screen.getByTestId('tab-context-menu-reload')).toBeInTheDocument()
       expect(screen.getByTestId('tab-context-menu-close')).toBeInTheDocument()
       expect(screen.getByTestId('tab-context-menu-close-others')).toBeInTheDocument()
       expect(screen.getByTestId('tab-context-menu-close-right')).toBeInTheDocument()
@@ -261,6 +262,41 @@ describe('TabBar', () => {
       fireEvent.click(screen.getByTestId('tab-context-menu-close-all'))
 
       expect(document.querySelectorAll('button.w-40')).toHaveLength(0)
+    })
+
+    describe('reload', () => {
+      let originalLocation
+
+      beforeEach(() => {
+        originalLocation = window.location
+        delete window.location
+        window.location = { ...originalLocation, reload: vi.fn() }
+      })
+
+      afterEach(() => {
+        window.location = originalLocation
+      })
+
+      it('reloads the page in place when reloading the active tab', () => {
+        renderTabBar(DASHBOARD_PATH)
+        const tab = screen.getByText('Dashboard').closest('button')
+        fireEvent.contextMenu(tab)
+        fireEvent.click(screen.getByTestId('tab-context-menu-reload'))
+
+        expect(window.location.reload).toHaveBeenCalledTimes(1)
+      })
+
+      it('navigates to the tab\'s route instead of reloading in place for a background tab', () => {
+        renderTabBarWithNavigation(DASHBOARD_PATH)
+        fireEvent.click(screen.getByText('go-patients')) // active is now Patients; Dashboard is in the background
+
+        const dashboardTab = screen.getByText('Dashboard').closest('button')
+        fireEvent.contextMenu(dashboardTab)
+        fireEvent.click(screen.getByTestId('tab-context-menu-reload'))
+
+        expect(window.location.href).toBe(DASHBOARD_PATH)
+        expect(window.location.reload).not.toHaveBeenCalled()
+      })
     })
   })
 })

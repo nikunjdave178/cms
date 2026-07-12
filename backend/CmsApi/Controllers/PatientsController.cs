@@ -153,38 +153,36 @@ public class PatientsController(AppDbContext db, NumberSequenceService numberSeq
             .Include(p => p.BloodGroup)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(q.Search))
+        if (!string.IsNullOrWhiteSpace(q.PatientNumber))
         {
-            var tokens = q.Search.ToLower().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            var patientNumber = q.PatientNumber.ToLower();
+            query = query.Where(p => p.PatientNumber.ToLower().Contains(patientNumber));
+        }
 
-            if (tokens.Length <= 1)
+        if (!string.IsNullOrWhiteSpace(q.Name))
+        {
+            // Multi-word query (e.g. "Krishna Sharma" or "Sharma Krishna"): match a
+            // full/partial name regardless of which name part each word belongs to,
+            // or the order the words were typed in — every word must appear
+            // somewhere across first/middle/last name, in any combination.
+            var tokens = q.Name.ToLower().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in tokens)
             {
-                var s = tokens.Length == 1 ? tokens[0] : string.Empty;
                 query = query.Where(p =>
-                    p.PatientNumber.ToLower().Contains(s) ||
-                    p.FirstName.ToLower().Contains(s) ||
-                    p.LastName.ToLower().Contains(s) ||
-                    (p.MiddleName != null && p.MiddleName.ToLower().Contains(s)) ||
-                    p.PhoneNumber.Contains(s));
-            }
-            else
-            {
-                // Multi-word query (e.g. "Krishna Sharma" or "Sharma Krishna"): match a
-                // full/partial name regardless of which name part each word belongs to,
-                // or the order the words were typed in — every word must appear
-                // somewhere across first/middle/last name, in any combination.
-                foreach (var token in tokens)
-                {
-                    query = query.Where(p =>
-                        p.FirstName.ToLower().Contains(token) ||
-                        p.LastName.ToLower().Contains(token) ||
-                        (p.MiddleName != null && p.MiddleName.ToLower().Contains(token)));
-                }
+                    p.FirstName.ToLower().Contains(token) ||
+                    p.LastName.ToLower().Contains(token) ||
+                    (p.MiddleName != null && p.MiddleName.ToLower().Contains(token)));
             }
         }
 
-        if (q.GenderId.HasValue) query = query.Where(p => p.GenderId == q.GenderId);
-        if (q.BloodGroupId.HasValue) query = query.Where(p => p.BloodGroupId == q.BloodGroupId);
+        if (!string.IsNullOrWhiteSpace(q.Mobile))
+        {
+            var mobile = q.Mobile.Trim();
+            query = query.Where(p => p.PhoneNumber.Contains(mobile));
+        }
+
+        if (q.GenderIds is { Length: > 0 }) query = query.Where(p => q.GenderIds.Contains(p.GenderId));
+        if (q.BloodGroupIds is { Length: > 0 }) query = query.Where(p => p.BloodGroupId.HasValue && q.BloodGroupIds.Contains(p.BloodGroupId.Value));
 
         if (!string.IsNullOrWhiteSpace(q.City))
         {
@@ -212,6 +210,10 @@ public class PatientsController(AppDbContext db, NumberSequenceService numberSeq
     }
 
     // sort is `field` / `-field` (leading '-' = descending); unrecognized/absent falls back to newest-first.
+    // Only direct, unjoined columns on Patient are sortable — Gender/BloodGroup would
+    // need to sort on the joined StaticValues.DisplayValue text column, which has no
+    // index (only the FK id does), so they're deliberately left out here to avoid an
+    // expensive sort; the frontend hides the sort affordance on those columns to match.
     private static IQueryable<Patient> ApplySort(IQueryable<Patient> query, string? sort)
     {
         var desc = sort is { Length: > 0 } && sort[0] == '-';
@@ -224,11 +226,8 @@ public class PatientsController(AppDbContext db, NumberSequenceService numberSeq
                 ? query.OrderByDescending(p => p.FirstName).ThenByDescending(p => p.MiddleName).ThenByDescending(p => p.LastName)
                 : query.OrderBy(p => p.FirstName).ThenBy(p => p.MiddleName).ThenBy(p => p.LastName),
             "dob" => desc ? query.OrderByDescending(p => p.DateOfBirth) : query.OrderBy(p => p.DateOfBirth),
-            "gender" => desc ? query.OrderByDescending(p => p.Gender.DisplayValue) : query.OrderBy(p => p.Gender.DisplayValue),
-            "mobile" => desc ? query.OrderByDescending(p => p.PhoneNumber) : query.OrderBy(p => p.PhoneNumber),
             "city" => desc ? query.OrderByDescending(p => p.City) : query.OrderBy(p => p.City),
             "state" => desc ? query.OrderByDescending(p => p.State) : query.OrderBy(p => p.State),
-            "bloodgroup" => desc ? query.OrderByDescending(p => p.BloodGroup!.DisplayValue) : query.OrderBy(p => p.BloodGroup!.DisplayValue),
             "registered" => desc ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
             _ => query.OrderByDescending(p => p.CreatedAt),
         };

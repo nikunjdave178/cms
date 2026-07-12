@@ -156,10 +156,30 @@ export default function TabBar() {
     return true
   }
 
+  // A full browser reload, not a client-side re-render — the simplest way to
+  // guarantee every hook/effect on that tab's page genuinely starts fresh.
+  // Only the active tab can be dirty, so only it needs to go through the
+  // unsaved-changes guard; reloading a background tab is just a plain
+  // navigation (it isn't mounted, so there's nothing live to lose).
+  const reloadTab = (path) => {
+    const isActive = path === activeTabPath
+    const doReload = () => {
+      if (path === location.pathname) window.location.reload()
+      else window.location.href = path
+    }
+    if (isActive) runGuarded(doReload)
+    else doReload()
+  }
+
   const runContextMenuAction = (action) => {
     if (!contextMenu) return
     const { path } = contextMenu
     closeContextMenu()
+
+    if (action === 'reload') {
+      reloadTab(path)
+      return
+    }
 
     if (action === 'close') {
       closeTabAndNavigate(path)

@@ -13,6 +13,7 @@ import { useTabTitle } from '../../hooks/useTabTitle'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import { useUnsavedChangesGuard } from '../../hooks/useUnsavedChangesGuard'
 import { useUnsavedChanges } from '../../context/UnsavedChangesContext'
+import { useToast } from '../../context/ToastContext'
 import PatientFormFields, {
   emptyPatientForm, validatePatientForm, buildPatientPayload, patientToForm, normalizeFieldKey,
 } from './PatientFormFields'
@@ -55,6 +56,7 @@ export default function PatientDetail() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { runGuarded } = useUnsavedChanges()
+  const { showToast } = useToast()
 
   const [patient, setPatient] = useState(null)
   const [appointments, setAppointments] = useState([])
@@ -140,6 +142,7 @@ export default function PatientDetail() {
       const f = patientToForm(fresh)
       setForm(f)
       setBaseline(f)
+      showToast(`Patient "${fullName(fresh)}" updated successfully.`)
       return true
     } catch (err) {
       if (err.fields) {
