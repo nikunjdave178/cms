@@ -13,6 +13,7 @@ import Pagination from '../../components/Pagination'
 import SortableHeader from '../../components/SortableHeader'
 import { fullName } from '../../utils/format'
 import { useToast } from '../../context/ToastContext'
+import { useLayout } from '../../context/LayoutContext'
 
 const emptyFilters = {
   patientNumber: '', name: '', mobile: '', genderIds: [], bloodGroupIds: [], city: '', state: '', registeredFrom: '', registeredTo: '',
@@ -55,6 +56,7 @@ export default function PatientList() {
   const { values: genders } = useStaticValues('GENDER')
   const { values: bloodGroups } = useStaticValues('BLOOD_GROUP')
   const { showToast } = useToast()
+  const { closeTab } = useLayout()
 
   const filtersDirty = JSON.stringify(draftFilters) !== JSON.stringify(filters)
   const filtersActive = Object.values(filters).some(v => (Array.isArray(v) ? v.length > 0 : Boolean(v)))
@@ -108,6 +110,9 @@ export default function PatientList() {
       await deletePatient(target.id)
       load()
       showToast(`Patient "${fullName(target)}" deleted successfully.`)
+      // Close that patient's own tab too, if it happens to be open in the
+      // background — its content is gone, so nothing to switch back to.
+      closeTab(`/app/patients/${target.id}`)
     } catch (e) {
       setDeleteError(e.message)
     }

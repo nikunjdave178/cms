@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { createPatient } from '../../api/patients'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import Spinner from '../../components/Spinner'
 import { useTabTitle } from '../../hooks/useTabTitle'
 import { useToast } from '../../context/ToastContext'
+import { useLayout } from '../../context/LayoutContext'
 import { fullName } from '../../utils/format'
 import PatientFormFields, {
   emptyPatientForm, validatePatientForm, buildPatientPayload, normalizeFieldKey,
@@ -12,7 +13,9 @@ import PatientFormFields, {
 
 export default function PatientForm() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { showToast } = useToast()
+  const { replaceTabPath } = useLayout()
 
   useTabTitle('Register New Patient')
 
@@ -44,9 +47,11 @@ export default function PatientForm() {
     setSaving(true)
     try {
       const payload = buildPatientPayload(form)
-      await createPatient(payload)
-      showToast(`Patient "${fullName(form)}" created successfully.`)
-      navigate('/app/patients')
+      const patient = await createPatient(payload)
+      showToast(`Patient "${fullName(patient)}" created successfully.`)
+      const detailPath = `/app/patients/${patient.id}`
+      replaceTabPath(location.pathname, detailPath, fullName(patient))
+      navigate(detailPath, { replace: true })
     } catch (e) {
       if (e.fields) {
         const mapped = {}

@@ -44,6 +44,25 @@ export function LayoutProvider({ children }) {
     })
   }
 
+  // Turns an existing tab into a tab for a different path in place, instead of
+  // opening a second tab alongside it — e.g. a "New Patient" tab becoming that
+  // patient's own tab once it's created, rather than leaving a stale "New
+  // Patient" tab behind. Falls back to a normal open/activate if oldPath isn't
+  // currently open (nothing to morph).
+  const replaceTabPath = (oldPath, newPath, newTitle) => {
+    setTabsState((prev) => {
+      const idx = prev.tabs.findIndex((t) => t.path === oldPath)
+      if (idx === -1) {
+        if (prev.tabs.some((t) => t.path === newPath)) return { ...prev, activeTabPath: newPath }
+        return { tabs: [...prev.tabs, { path: newPath, title: newTitle ?? newPath }], activeTabPath: newPath }
+      }
+      const newTabs = [...prev.tabs]
+      newTabs[idx] = { path: newPath, title: newTitle ?? prev.tabs[idx].title }
+      const newActive = prev.activeTabPath === oldPath ? newPath : prev.activeTabPath
+      return { tabs: newTabs, activeTabPath: newActive }
+    })
+  }
+
   // Returns the path that should become active after the close (or null if no
   // tabs remain) — the caller navigates there if needed.
   const closeTab = (path) => {
@@ -101,6 +120,7 @@ export function LayoutProvider({ children }) {
         tabs: tabsState.tabs,
         activeTabPath: tabsState.activeTabPath,
         openOrActivateTab,
+        replaceTabPath,
         closeTab,
         closeOtherTabs,
         closeTabsToTheRight,

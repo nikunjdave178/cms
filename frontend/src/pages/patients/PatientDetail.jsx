@@ -6,14 +6,17 @@ import { getInvoices } from '../../api/billing'
 import { format } from 'date-fns'
 import Spinner from '../../components/Spinner'
 import ConfirmModal from '../../components/ConfirmModal'
+import ErrorModal from '../../components/ErrorModal'
 import { fullName } from '../../utils/format'
 import { badgeClass } from '../../constants/status'
 import { isDirty } from '../../utils/dirty'
+import { MAIN_PATH } from '../../constants/nav'
 import { useTabTitle } from '../../hooks/useTabTitle'
 import { useStaticValues } from '../../hooks/useStaticValues'
 import { useUnsavedChangesGuard } from '../../hooks/useUnsavedChangesGuard'
 import { useUnsavedChanges } from '../../context/UnsavedChangesContext'
 import { useToast } from '../../context/ToastContext'
+import { useLayout } from '../../context/LayoutContext'
 import PatientFormFields, {
   emptyPatientForm, validatePatientForm, buildPatientPayload, patientToForm, normalizeFieldKey,
 } from './PatientFormFields'
@@ -57,12 +60,14 @@ export default function PatientDetail() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { runGuarded } = useUnsavedChanges()
   const { showToast } = useToast()
+  const { closeTab } = useLayout()
 
   const [patient, setPatient] = useState(null)
   const [appointments, setAppointments] = useState([])
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [showDelete, setShowDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
 
   const [section, setSection] = useState('summary')
   const [form, setForm] = useState(emptyPatientForm)
@@ -115,8 +120,18 @@ export default function PatientDetail() {
   useTabTitle(patient && fullName(patient))
 
   const handleDelete = async () => {
-    await deletePatient(id)
-    navigate('/app/patients')
+    setShowDelete(false)
+    try {
+      await deletePatient(id)
+      showToast(`Patient "${fullName(patient)}" deleted successfully.`)
+      // The deleted patient's own tab can't show anything valid anymore —
+      // close it and land on whatever tab (if any) takes over, same as
+      // closing any other tab.
+      const newActive = closeTab(`/app/patients/${id}`)
+      navigate(newActive ?? MAIN_PATH)
+    } catch (e) {
+      setDeleteError(e.message)
+    }
   }
 
   const set = (field) => (e) => {
@@ -350,6 +365,10 @@ export default function PatientDetail() {
           onConfirm={handleDelete}
           onCancel={() => setShowDelete(false)}
         />
+      )}
+
+      {deleteError && (
+        <ErrorModal title="Delete Failed" message={deleteError} onClose={() => setDeleteError(null)} />
       )}
     </div>
   )
